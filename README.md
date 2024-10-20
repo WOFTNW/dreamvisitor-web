@@ -1,6 +1,5 @@
-# Mantine Vite template
-
-## Features
+# Dreamvisitor Web
+A web interface for [Dreamvisitor](https://github.com/Stonley890/DreamvisitorHub).
 
 This template comes with the following features:
 
