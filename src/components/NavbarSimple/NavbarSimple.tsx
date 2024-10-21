@@ -1,31 +1,25 @@
 import { useState } from 'react';
-import { Group, Code } from '@mantine/core';
+import { Group, Title } from '@mantine/core';
 import {
-  IconBellRinging,
-  IconFingerprint,
-  IconKey,
   IconSettings,
-  Icon2fa,
-  IconDatabaseImport,
-  IconReceipt2,
   IconSwitchHorizontal,
   IconLogout,
+  IconHome,
+  IconTerminal,
+  IconUser,
 } from '@tabler/icons-react';
 import classes from './NavbarSimple.module.css';
 import { ActionToggle } from '../ActionToggle/ActionToggle';
 
 const data = [
-  { link: '', label: 'Notifications', icon: IconBellRinging },
-  { link: '', label: 'Billing', icon: IconReceipt2 },
-  { link: '', label: 'Security', icon: IconFingerprint },
-  { link: '', label: 'SSH Keys', icon: IconKey },
-  { link: '', label: 'Databases', icon: IconDatabaseImport },
-  { link: '', label: 'Authentication', icon: Icon2fa },
-  { link: '', label: 'Other Settings', icon: IconSettings },
+  { link: '/', label: 'Home', icon: IconHome },
+  { link: 'console', label: 'Console', icon: IconTerminal },
+  { link: 'config', label: 'Configuration', icon: IconSettings },
+  { link: 'users', label: 'Users', icon: IconUser },
 ];
 
-export function NavbarSimple() {
-  const [active, setActive] = useState('Billing');
+export function NavbarSimple({ page }: { page: string }) {
+  const [active, setActive] = useState(page);
 
   const links = data.map((item) => (
     <a
@@ -34,7 +28,6 @@ export function NavbarSimple() {
       href={item.link}
       key={item.label}
       onClick={(event) => {
-        event.preventDefault();
         setActive(item.label);
       }}
     >
@@ -47,7 +40,7 @@ export function NavbarSimple() {
     <nav className={classes.navbar}>
       <div className={classes.navbarMain}>
         <Group className={classes.header} justify="space-between">
-          <h1>Dreamvisitor</h1>
+          <Title order={1}>DV Web</Title>
           <ActionToggle/>
         </Group>
         {links}
