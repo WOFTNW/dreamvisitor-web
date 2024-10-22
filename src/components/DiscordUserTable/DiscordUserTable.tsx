@@ -1,4 +1,4 @@
-import { Avatar, Badge, Table, Group, Text, ActionIcon, Anchor, rem } from '@mantine/core';
+import { Avatar, Badge, Table, Group, Text, ActionIcon, rem } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 
 const data = [
@@ -75,7 +75,7 @@ export function DiscordUserTable() {
   ));
 
   return (
-    <Table.ScrollContainer minWidth={'auto'}>
+    <Table.ScrollContainer minWidth="auto">
       <Table verticalSpacing="sm">
         <Table.Thead>
           <Table.Tr>

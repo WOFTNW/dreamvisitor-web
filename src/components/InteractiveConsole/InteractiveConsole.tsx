@@ -6,7 +6,7 @@ import {
 import classes from './InteractiveConsole.module.css';
 import { useRef } from 'react';
 
-var data = [
+const data = [
     '[17:03:28 INFO]: ratttatoullie joined the game',
     '[17:03:28 INFO]: ratttatoullie[/38.186.113.107:64057] logged in with entity id 164093 at ([world]14.092836983169923, 66.0, 63.58624276545464)',
     '[17:03:44 INFO]: <ratttatoullie> man....',
@@ -56,20 +56,21 @@ export function InteractiveConsole() {
     return (
         <Stack className={classes.container}>
             <div className={classes.feedContainer}>
-                <Stack className={classes.feed} justify="left" gap={"0px"} ref={viewport}>
+                <Stack className={classes.feed} justify="left" gap="0px" ref={viewport}>
                     {lines}
                 </Stack>
-                <ActionIcon title='Jump to bottom' onClick={scrollToBottom} variant='white' size={'xl'} className={classes.jump}>
+                <ActionIcon title='Jump to bottom' onClick={scrollToBottom} variant='white' size="xl" className={classes.jump}>
                     <IconArrowDown className='classes.icon' stroke={1.5} />
                 </ActionIcon>
             </div>
-            <Divider></Divider>
+            <Divider />
             <div className={classes.sender}>
                 <TextInput className={classes.input}
+                    data-autofocus
                     variant="unstyled"
                     placeholder="Command"
                 />
-                <ActionIcon title='Send' size={'xl'}>
+                <ActionIcon title='Send' size="xl">
                     <IconSend className='classes.icon' stroke={1.5} />
                 </ActionIcon>
 

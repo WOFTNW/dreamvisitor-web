@@ -1,14 +1,13 @@
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
-import { Text, Title } from '@mantine/core';
+import { Text } from '@mantine/core';
 
 export function HomePage() {
   return (
     <>
       <div style={{display: 'flex', flexDirection: 'row'}}>
-        <NavbarSimple page={"Home"} />
-        <div style={{margin:'var(--mantine-spacing-md)'}}>
-          <Title order={1}>Header</Title>
-          <Text>Home page</Text>
+        <NavbarSimple page="Home" />
+        <div style={{margin:'var(--mantine-spacing-xl)'}}>
+          <Text>This page hasn't been designed yet.</Text>
         </div>
       </div>
     </>

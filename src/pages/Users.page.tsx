@@ -1,9 +1,9 @@
 import { DiscordUserTable } from '@/components/DiscordUserTable/DiscordUserTable';
 import { InfractionList } from '@/components/InfractionList/InfractionList';
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
-import { Avatar, Button, Center, Divider, Group, Modal, rem, SegmentedControl, Space, Stack, Tabs, Text, TextInput, Title, Transition } from '@mantine/core';
+import { Avatar, Button, Center, Checkbox, Group, Modal, NumberInput, rem, SegmentedControl, Skeleton, Space, Stack, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAnalyze, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconMoneybag, IconSearch } from '@tabler/icons-react';
+import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconMoneybag, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
 function Table({ opened }: { opened: boolean }) {
@@ -35,7 +35,7 @@ function Table({ opened }: { opened: boolean }) {
                             </Center>
                         )
                     }]} defaultValue='minecraft' />
-                <Space h={'md'} />
+                <Space h="md" />
                 <TextInput
                     leftSectionPointerEvents="none"
                     leftSection={<IconSearch />}
@@ -49,8 +49,25 @@ function Table({ opened }: { opened: boolean }) {
 }
 
 function UserProfile({ opened }: { opened: boolean }) {
+
+    const [modalOpened, { open, close }] = useDisclosure(false);
+
     return (
         <div style={{ gridColumn: 1, gridRow: 1 }}>
+            <Modal opened={modalOpened} onClose={close} title="New Infraction">
+                <NumberInput data-autofocus withAsterisk label='Value' description='How many points this infraction is worth.'/>
+                <Space h="md" />
+                <Textarea
+                    label="Reason"
+                    description="(Optional) Add a reason for this infraction."
+                />
+                <Space h="md" />
+                <Checkbox label="Send a warn message" description='Whether to notify the user they have been warned.' defaultChecked />
+                <Space h="md" />
+                <Button>Create</Button>
+                
+            </Modal>
+
             <Transition
                 mounted={opened}
                 transition="fade-up"
@@ -58,21 +75,25 @@ function UserProfile({ opened }: { opened: boolean }) {
                 timingFunction="ease"
                 enterDelay={250}
             >{(styles) => <div style={styles}>
-                <Group gap={'var(--mantine.spacing.md)'}>
-                    <Avatar size={'xl'} src="https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp" alt="Avatar" />
+                <Button variant='subtle' leftSection={<IconArrowBack />} onClick={opened == !opened}>
+                    Back
+                </Button>
+                <Space h="md" />
+                <Group gap="var(--mantine.spacing.md)">
+                    <Avatar size="xl" src="https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp" alt="Avatar" />
                     <Stack gap={0}>
                         <Title order={2}>Bog</Title>
-                        <Group gap={'4px'}>
+                        <Group gap="4px">
                             <IconBrandDiscord size={18} color='var(--mantine-color-dimmed)' />
                             <Text size='sm' color='var(--mantine-color-dimmed)'>stonleyfx</Text>
                         </Group>
-                        <Group gap={'4px'}>
+                        <Group gap="4px">
                             <IconBrandMinecraft size={18} color='var(--mantine-color-dimmed)' />
                             <Text size='sm' color='var(--mantine-color-dimmed)'>BogTheMudWing</Text>
                         </Group>
                     </Stack>
                 </Group>
-                <Space h={'md'} />
+                <Space h="md" />
                 <Tabs defaultValue="stats">
                     <Tabs.List>
                         <Tabs.Tab value="stats" leftSection={<IconAnalyze />}>
@@ -87,12 +108,17 @@ function UserProfile({ opened }: { opened: boolean }) {
                     </Tabs.List>
 
                     <Tabs.Panel value="stats">
-                        Gallery tab content
+                        <Space h="md" />
+                        <Skeleton height={8} radius="xl" />
+                        <Skeleton height={8} mt={6} radius="xl" />
+                        <Skeleton height={8} mt={6} width="70%" radius="xl" />
                     </Tabs.Panel>
 
                     <Tabs.Panel value="infractions">
-                        <Space h={'md'} />
+                        <Space h="md" />
                         <InfractionList />
+                        <Space h="md" />
+                        <Button onClick={open}>New Infraction</Button>
                     </Tabs.Panel>
 
                     <Tabs.Panel value="economy  ">
@@ -107,24 +133,18 @@ function UserProfile({ opened }: { opened: boolean }) {
 
 export function UsersPage() {
 
-    const [opened, setOpened] = useState(false);
+    const [opened] = useState(false);
 
     return (
 
         <>
             <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <NavbarSimple page={"Users"} />
-                <div style={{ margin: 'var(--mantine-spacing-md)', width: '100%' }}>
-                    <Title order={1}>User Manager</Title>
-                    <Text>Manage everything about users.</Text>
-                    <Space h={'md'} />
-                    <Divider />
-                    <Space h={'md'} />
-
+                <NavbarSimple page="Users" />
+                <div style={{ margin: 'var(--mantine-spacing-xl)', width: '100%' }}>
                     {/* <Button onClick={() => setOpened(!opened)}>Toggle</Button> */}
                     <div style={{ display: 'grid' }}>
                         <UserProfile opened={!opened} />
-                        <Table opened={opened}></Table>
+                        <Table opened={opened} />
                     </div>
                 </div>
             </div>

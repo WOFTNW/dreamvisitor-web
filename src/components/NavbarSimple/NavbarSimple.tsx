@@ -27,7 +27,7 @@ export function NavbarSimple({ page }: { page: string }) {
       data-active={item.label === active || undefined}
       href={item.link}
       key={item.label}
-      onClick={(event) => {
+      onClick={() => {
         setActive(item.label);
       }}
     >
@@ -40,8 +40,8 @@ export function NavbarSimple({ page }: { page: string }) {
     <nav className={classes.navbar}>
       <div className={classes.navbarMain}>
         <Group className={classes.header} justify="space-between">
-          <Title order={1}>DV Web</Title>
-          <ActionToggle/>
+          <Title order={1}>DV3</Title>
+          <ActionToggle />
         </Group>
         {links}
       </div>
