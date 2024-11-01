@@ -1,12 +1,13 @@
 import { DiscordUserTable } from '@/components/DiscordUserTable/DiscordUserTable';
 import { InfractionList } from '@/components/InfractionList/InfractionList';
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
-import { Avatar, Button, Center, Checkbox, Group, Modal, NumberInput, rem, SegmentedControl, Skeleton, Space, Stack, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
+import { Avatar, Badge, Button, Checkbox, CloseButton, Group, Modal, NumberInput, Skeleton, Space, Stack, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconMoneybag, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
-function Table({ opened }: { opened: boolean }) {
+function Table({ opened, setOpened }: { opened: boolean, setOpened: (value: boolean) => void }) {
+    const [value, setValue] = useState('');
     return (
         <div style={{ gridColumn: 1, gridRow: 1 }}>
             <Transition
@@ -16,46 +17,61 @@ function Table({ opened }: { opened: boolean }) {
                 timingFunction="ease"
                 enterDelay={250}
             >{(styles) => <div style={styles}>
-                <SegmentedControl fullWidth data={[
-                    {
-                        value: 'minecraft',
-                        label: (
-                            <Center style={{ gap: 10 }}>
-                                <IconBrandMinecraft style={{ width: rem(16), height: rem(16) }} />
-                                <span>Minecraft</span>
-                            </Center>
-                        ),
-                    },
-                    {
-                        value: 'discord',
-                        label: (
-                            <Center style={{ gap: 10 }}>
-                                <IconBrandDiscord style={{ width: rem(16), height: rem(16) }} />
-                                <span>Discord</span>
-                            </Center>
-                        )
-                    }]} defaultValue='minecraft' />
                 <Space h="md" />
                 <TextInput
                     leftSectionPointerEvents="none"
                     leftSection={<IconSearch />}
                     placeholder="Search by username"
+                    value={value}
+                    onChange={(event) => setValue(event.currentTarget.value)}
+                    rightSectionPointerEvents="all"
+                    rightSection={
+                        <CloseButton
+                          aria-label="Clear input"
+                          onClick={() => setValue('')}
+                          style={{ display: value ? undefined : 'none' }}
+                        />
+                      }
                 />
-                <DiscordUserTable />
+                <DiscordUserTable setOpened={setOpened} />
             </div>}
             </Transition>
         </div>
     )
 }
 
-function UserProfile({ opened }: { opened: boolean }) {
+const userData =
+{
+    avatar:
+        'https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp',
+    nickname: 'Bog',
+    username: 'stonleyfx',
+    minecraft: 'BogTheMudWing',
+    standing: 'Good',
+    tribe: 'MudWing'
+};
+
+function UserProfile({ opened, setOpened }: { opened: boolean, setOpened: (value: boolean) => void }) {
 
     const [modalOpened, { open, close }] = useDisclosure(false);
+
+    const tribeColors: Record<string, string> = {
+        hivewing: 'orange',
+        icewing: 'lightblue',
+        leafwing: 'darkgreen',
+        mudwing: 'brown',
+        nightwing: 'purple',
+        rainwing: 'green',
+        sandwing: 'yellow',
+        seawing: 'blue',
+        silkwing: 'pink',
+        skywing: 'red',
+    };
 
     return (
         <div style={{ gridColumn: 1, gridRow: 1 }}>
             <Modal opened={modalOpened} onClose={close} title="New Infraction">
-                <NumberInput data-autofocus withAsterisk label='Value' description='How many points this infraction is worth.'/>
+                <NumberInput data-autofocus withAsterisk label='Value' description='How many points this infraction is worth.' />
                 <Space h="md" />
                 <Textarea
                     label="Reason"
@@ -65,7 +81,7 @@ function UserProfile({ opened }: { opened: boolean }) {
                 <Checkbox label="Send a warn message" description='Whether to notify the user they have been warned.' defaultChecked />
                 <Space h="md" />
                 <Button>Create</Button>
-                
+
             </Modal>
 
             <Transition
@@ -75,21 +91,24 @@ function UserProfile({ opened }: { opened: boolean }) {
                 timingFunction="ease"
                 enterDelay={250}
             >{(styles) => <div style={styles}>
-                <Button variant='subtle' leftSection={<IconArrowBack />} onClick={opened == !opened}>
+                <Button variant='subtle' leftSection={<IconArrowBack />} onClick={() => setOpened(true)}>
                     Back
                 </Button>
                 <Space h="md" />
                 <Group gap="var(--mantine.spacing.md)">
-                    <Avatar size="xl" src="https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp" alt="Avatar" />
+                    <Avatar size="xl" src={userData.avatar} alt="Avatar" />
                     <Stack gap={0}>
-                        <Title order={2}>Bog</Title>
+                        <Group gap="var(--mantine-spacing-sm)">
+                            <Title order={2}>{userData.nickname}</Title>
+                            <Badge color={tribeColors[userData.tribe.toLowerCase()]}>{userData.tribe}</Badge>
+                        </Group>
                         <Group gap="4px">
                             <IconBrandDiscord size={18} color='var(--mantine-color-dimmed)' />
-                            <Text size='sm' color='var(--mantine-color-dimmed)'>stonleyfx</Text>
+                            <Text size='sm' color='var(--mantine-color-dimmed)'>{userData.username}</Text>
                         </Group>
                         <Group gap="4px">
                             <IconBrandMinecraft size={18} color='var(--mantine-color-dimmed)' />
-                            <Text size='sm' color='var(--mantine-color-dimmed)'>BogTheMudWing</Text>
+                            <Text size='sm' color='var(--mantine-color-dimmed)'>{userData.minecraft}</Text>
                         </Group>
                     </Stack>
                 </Group>
@@ -133,7 +152,7 @@ function UserProfile({ opened }: { opened: boolean }) {
 
 export function UsersPage() {
 
-    const [opened] = useState(false);
+    const [opened, setOpened] = useState(false);
 
     return (
 
@@ -141,10 +160,9 @@ export function UsersPage() {
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <NavbarSimple page="Users" />
                 <div style={{ margin: 'var(--mantine-spacing-xl)', width: '100%' }}>
-                    {/* <Button onClick={() => setOpened(!opened)}>Toggle</Button> */}
                     <div style={{ display: 'grid' }}>
-                        <UserProfile opened={!opened} />
-                        <Table opened={opened} />
+                        <UserProfile opened={!opened} setOpened={setOpened} />
+                        <Table opened={opened} setOpened={setOpened} />
                     </div>
                 </div>
             </div>

@@ -6,10 +6,8 @@ export function ConsolePage() {
         <>
             <div style={{ display: 'flex ', flexDirection: 'row'}}>
                 <NavbarSimple page="Console" />
-                <div style={{margin:'var(--mantine-spacing-xl)', width: '800px'}}>
-                    <div style={{ width:'100%', display: 'flex', marginRight: 'var(--mantine-spacing-md)', flexShrink: 1 }}>
-                        <InteractiveConsole />
-                    </div>
+                <div style={{margin:'var(--mantine-spacing-xl)', flexShrink:1 }}>
+                    <InteractiveConsole />
                 </div>
 
             </div>

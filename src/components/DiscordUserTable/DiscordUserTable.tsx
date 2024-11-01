@@ -1,5 +1,6 @@
 import { Avatar, Badge, Table, Group, Text, ActionIcon, rem } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
+import classes from './DiscordUserTable.module.css';
 
 const data = [
   {
@@ -34,9 +35,9 @@ const standingColors: Record<string, string> = {
   banned: 'red',
 };
 
-export function DiscordUserTable() {
+export function DiscordUserTable({ setOpened }: { setOpened: (value: boolean) => void  }) {
   const rows = data.map((item) => (
-    <Table.Tr key={item.username}>
+    <Table.Tr key={item.username} onClick={() => setOpened(false)} >
       <Table.Td>
         <Group gap="sm">
           <Avatar size={30} src={item.avatar} radius={30} />
@@ -60,17 +61,6 @@ export function DiscordUserTable() {
           {item.standing}
         </Badge>
       </Table.Td>
-      
-      <Table.Td>
-        <Group gap={0} justify="flex-end">
-          <ActionIcon variant="subtle" color="gray">
-            <IconPencil style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-          </ActionIcon>
-          <ActionIcon variant="subtle" color="red">
-            <IconTrash style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-          </ActionIcon>
-        </Group>
-      </Table.Td>
     </Table.Tr>
   ));
 
@@ -78,11 +68,10 @@ export function DiscordUserTable() {
     <Table.ScrollContainer minWidth="auto">
       <Table verticalSpacing="sm">
         <Table.Thead>
-          <Table.Tr>
+          <Table.Tr className={classes.top}>
             <Table.Th>User</Table.Th>
             <Table.Th>Minecraft</Table.Th>
             <Table.Th>Standing</Table.Th>
-            <Table.Th />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>{rows}</Table.Tbody>

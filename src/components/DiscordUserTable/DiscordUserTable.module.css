@@ -1,0 +1,6 @@
+tr {
+    &:hover:not(.top) {
+        background-color: var(--mantine-primary-color-light-hover);
+        cursor: pointer;
+    }
+}
