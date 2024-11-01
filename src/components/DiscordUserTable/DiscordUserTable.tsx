@@ -27,6 +27,10 @@ const data = [
     minecraft: 'RealTNTCreeper',
     standing: 'Banned'
   },
+  {
+    minecraft: 'NotADiscordUser',
+    standing: 'Good'
+  }
 ];
 
 const standingColors: Record<string, string> = {

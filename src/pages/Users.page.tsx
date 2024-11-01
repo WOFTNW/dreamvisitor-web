@@ -1,7 +1,7 @@
 import { DiscordUserTable } from '@/components/DiscordUserTable/DiscordUserTable';
 import { InfractionList } from '@/components/InfractionList/InfractionList';
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
-import { Avatar, Badge, Button, Checkbox, CloseButton, Group, Modal, NumberInput, Skeleton, Space, Stack, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
+import { Avatar, Badge, Button, Checkbox, CloseButton, FileInput, Group, LoadingOverlay, Modal, NumberInput, Skeleton, Space, Stack, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconMoneybag, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -68,9 +68,12 @@ function UserProfile({ opened, setOpened }: { opened: boolean, setOpened: (value
         skywing: 'red',
     };
 
+    const [visible, { toggle }] = useDisclosure(false);
+
     return (
         <div style={{ gridColumn: 1, gridRow: 1 }}>
             <Modal opened={modalOpened} onClose={close} title="New Infraction">
+                <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
                 <NumberInput data-autofocus withAsterisk label='Value' description='How many points this infraction is worth.' />
                 <Space h="md" />
                 <Textarea
@@ -78,9 +81,17 @@ function UserProfile({ opened, setOpened }: { opened: boolean, setOpened: (value
                     description="(Optional) Add a reason for this infraction."
                 />
                 <Space h="md" />
+                <FileInput
+                    label="Proof"
+                    description="Attach a proof file"
+                    placeholder="Input placeholder"
+                />
+                <Space h="md" />
                 <Checkbox label="Send a warn message" description='Whether to notify the user they have been warned.' defaultChecked />
                 <Space h="md" />
-                <Button>Create</Button>
+                <Checkbox label="Include proof in message" description='Whether to include the proof file in the warn message.' defaultChecked />
+                <Space h="md" />
+                <Button onClick={toggle}>Create</Button>
 
             </Modal>
 
