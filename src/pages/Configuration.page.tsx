@@ -2,9 +2,10 @@ import { LocationInput } from '@/components/LocationInput/LocationInput';
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
 import { SelectCategory } from '@/components/SelectGroupsSearchable/SelectCategory';
 import { SelectChannel } from '@/components/SelectGroupsSearchable/SelectChannel';
+import { SelectGroup } from '@/components/SelectGroupsSearchable/SelectGroup';
 import { SelectRole } from '@/components/SelectGroupsSearchable/SelectRole';
-import { ActionIcon, Alert, Button, Card, Checkbox, Divider, Fieldset, Group, NumberInput, PasswordInput, Space, Switch, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
-import { IconServer, IconTool, IconInfoCircle, IconMoneybag, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Alert, Button, Card, Checkbox, Divider, Fieldset, Grid, Group, NumberInput, Paper, PasswordInput, Space, Switch, Tabs, Text, Textarea, TextInput, Title, Transition } from '@mantine/core';
+import { IconServer, IconTool, IconInfoCircle, IconMoneybag, IconTrash, IconAdjustments, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 
 const ecoItems =
@@ -203,9 +204,25 @@ export function ConfigPage() {
                                 <NumberInput label='Mail Distance To Reward Multiplier' placeholder='0.05' description='Mail delivery reward is calculated by multiplying the distance by this number. The result is then rounded to the nearest ten. At 0, the reward given is 0. At 1, the reward given will be the distance in blocks.' />
                             </Fieldset>
                             <Space h={space} />
+                            <Fieldset legend="Permission Group Collections">
+                                <Group grow>
+                                    <ActionIcon w={"min-content"} variant="subtle" color='red' aria-label="Remove" size={'xl'}>
+                                        <IconTrash />
+                                    </ActionIcon>
+                                    <TextInput label='Name'></TextInput>
+                                    <SelectGroup label='Groups' />
+
+                                </Group>
+                                <Space h={space} />
+                                <Button>Add</Button> {/* TODO: make button add group */}
+                            </Fieldset>
+                            <Space h={space} />
                             <Divider />
                             <Space h={space} />
-                            <Button>Apply</Button>
+                            <Group>
+                                <Button>Apply</Button>
+                                <Button variant='light'>Revert</Button>
+                            </Group>
                         </Tabs.Panel>
 
                         <Tabs.Panel value="economy">
