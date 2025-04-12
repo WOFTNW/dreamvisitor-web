@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Group, Title } from '@mantine/core';
+import { Group, Title, Text } from '@mantine/core';
 import {
   IconSettings,
   IconSwitchHorizontal,
@@ -8,18 +8,22 @@ import {
   IconTerminal,
   IconUser,
 } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import classes from './NavbarSimple.module.css';
 import { ActionToggle } from '../ActionToggle/ActionToggle';
 
 const data = [
   { link: '/', label: 'Home', icon: IconHome },
-  { link: 'console', label: 'Console', icon: IconTerminal },
-  { link: 'config', label: 'Configuration', icon: IconSettings },
-  { link: 'users', label: 'Users', icon: IconUser },
+  { link: '/console', label: 'Console', icon: IconTerminal },
+  { link: '/config', label: 'Configuration', icon: IconSettings },
+  { link: '/users', label: 'Users', icon: IconUser },
 ];
 
 export function NavbarSimple({ page }: { page: string }) {
   const [active, setActive] = useState(page);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const links = data.map((item) => (
     <a
@@ -27,14 +31,25 @@ export function NavbarSimple({ page }: { page: string }) {
       data-active={item.label === active || undefined}
       href={item.link}
       key={item.label}
-      onClick={() => {
+      onClick={(e) => {
+        e.preventDefault();
         setActive(item.label);
+        navigate(item.link);
       }}
     >
       <item.icon className={classes.linkIcon} stroke={1.5} />
       <span>{item.label}</span>
     </a>
   ));
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleSwitchAccount = () => {
+    navigate('/login');
+  };
 
   return (
     <nav className={classes.navbar}>
@@ -47,15 +62,28 @@ export function NavbarSimple({ page }: { page: string }) {
       </div>
 
       <div className={classes.footer}>
-        <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
-          <span>Change account</span>
-        </a>
+        {user && (
+          <>
+            <Text size="sm" fw={500} className={classes.userInfo}>
+              {user.name || user.email}
+            </Text>
+            <a href="#" className={classes.link} onClick={(event) => {
+              event.preventDefault();
+              handleSwitchAccount();
+            }}>
+              <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
+              <span>Change account</span>
+            </a>
 
-        <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconLogout className={classes.linkIcon} stroke={1.5} />
-          <span>Logout</span>
-        </a>
+            <a href="#" className={classes.link} onClick={(event) => {
+              event.preventDefault();
+              handleLogout();
+            }}>
+              <IconLogout className={classes.linkIcon} stroke={1.5} />
+              <span>Logout</span>
+            </a>
+          </>
+        )}
       </div>
     </nav>
   );
