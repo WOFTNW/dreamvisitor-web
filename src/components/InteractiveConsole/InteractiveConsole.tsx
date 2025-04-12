@@ -1,80 +1,210 @@
-import { ActionIcon, Divider, Stack, TextInput } from '@mantine/core';
+import { ActionIcon, Divider, Stack, TextInput, Alert, LoadingOverlay } from '@mantine/core';
 import {
-    IconArrowDown,
-    IconSend,
+  IconArrowDown,
+  IconSend,
+  IconAlertCircle
 } from '@tabler/icons-react';
 import classes from './InteractiveConsole.module.css';
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { pb } from '@/lib/pocketbase';
+import { ClientResponseError } from 'pocketbase';
 
-const data = [
-    '[17:03:28 INFO]: ratttatoullie joined the game',
-    '[17:03:28 INFO]: ratttatoullie[/38.186.113.107:64057] logged in with entity id 164093 at ([world]14.092836983169923, 66.0, 63.58624276545464)',
-    '[17:03:44 INFO]: <ratttatoullie> man....',
-    '[17:35:56 INFO]: ratttatoullie lost connection: Disconnected',
-    '[17:35:56 INFO]: ratttatoullie left the game',
-    '[17:36:13 INFO]: UUID of player ratttatoullie is f40bdf3d-ed8c-4dd3-9bc4-56f1022c33b0',
-    '[17:36:15 INFO]: ratttatoullie joined the game',
-    '[17:36:15 INFO]: ratttatoullie[/38.186.113.107:64680] logged in with entity id 169226 at ([world]-265.8491524468691, 68.0, -58.30000001192093)',
-    '[17:41:49 INFO]: ratttatoullie lost connection: Disconnected',
-    '[17:41:49 INFO]: ratttatoullie left the game',
-    '[17:42:02 INFO]: UUID of player ratttatoullie is f40bdf3d-ed8c-4dd3-9bc4-56f1022c33b0',
-    '[17:42:03 INFO]: ratttatoullie joined the game',
-    '[17:42:03 INFO]: ratttatoullie[/38.186.113.107:64781] logged in with entity id 170164 at ([world]-238.30000001192093, 72.0, -120.73807112314138)',
-    '[18:34:49 INFO]: ratttatoullie issued server command: /abilities',
-    '[18:34:51 INFO]: ratttatoullie issued server command: /abilities 0 1',
-    '[18:35:09 INFO]: ratttatoullie issued server command: /abilities',
-    '[18:35:10 INFO]: ratttatoullie issued server command: /abilities 0 0',
-    '[19:02:18 INFO]: ratttatoullie lost connection: Disconnected',
-    '[19:02:19 INFO]: ratttatoullie left the game',
-    '[21:21:14 INFO]: UUID of player ratttatoullie is f40bdf3d-ed8c-4dd3-9bc4-56f1022c33b0',
-    '[21:21:15 INFO]: ratttatoullie joined the game',
-    '[21:21:15 INFO]: ratttatoullie[/38.186.113.107:50950] logged in with entity id 191385 at ([world]-66.74517836649711, 98.0, 81.0108063208654)',
-    '[21:36:21 INFO]: ratttatoullie has made the advancement [The Parrots and the Bats]',
-    '[22:39:02 INFO]: ratttatoullie has made the advancement [Hot Stuff]',
-    '[22:53:35 INFO]: UUID of player _SilverRain is 0d005102-db98-494c-8a2a-029f7810eb67',
-    '[22:53:37 INFO]: _SilverRain joined the game',
-    '[22:53:37 INFO]: _SilverRain[/208.84.223.103:59802] logged in with entity id 203931 at ([world]-442.87814040626444, 65.0, 139.25889704148938)',
-    '[22:58:55 INFO]: _SilverRain has made the advancement [The Cutest Predator]',
-    '[23:02:53 INFO]: _SilverRain lost connection: Disconnected',
-    '[23:02:53 INFO]: _SilverRain left the game',
-    '[00:14:11 INFO]: ratttatoullie has made the advancement [The Cutest Predator]',
-    '[00:43:42 INFO]: ratttatoullie lost connection: Disconnected',
-    '[00:43:42 INFO]: ratttatoullie left the game'
-];
+// Interface for log data
+interface LogData {
+  collectionId: string;
+  collectionName: string;
+  id: string;
+  log_msg: string;
+  created: string;
+  updated: string;
+}
 
 export function InteractiveConsole() {
+  const [logs, setLogs] = useState<LogData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [command, setCommand] = useState('');
+  const viewport = useRef<HTMLDivElement>(null);
 
-    const lines = data.map((item) => (
-        <code className={classes.line}>{item}</code>
+  // Scroll to bottom of console
+  const scrollToBottom = useCallback(() => {
+    if (viewport.current) {
+      viewport.current.scrollTo({ top: viewport.current!.scrollHeight, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Auto-scroll when new logs arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [logs, scrollToBottom]);
+
+  // Handle errors gracefully
+  const handleError = useCallback((err: unknown, operation: string): string => {
+    console.error(`Error during ${operation}:`, err);
+
+    if (err instanceof ClientResponseError) {
+      return err.message || `Error during ${operation}`;
+    } else if (err instanceof Error) {
+      return err.message;
+    }
+
+    return `Failed to ${operation}. Please try again later.`;
+  }, []);
+
+  // Fetch initial logs
+  const fetchLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const records = await pb.collection('server_logs').getList(1, 100, {
+        sort: 'created',
+      });
+
+      setLogs(records.items as LogData[]);
+    } catch (err) {
+      const errorMessage = handleError(err, 'fetch logs');
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [handleError]);
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    fetchLogs();
+    let unsubscribeFunc: (() => void) | null = null;
+
+    try {
+      // Subscribe to real-time updates
+      const unsubscribePromise = pb.collection('server_logs').subscribe('*', function (e) {
+        if (e.action === 'create') {
+          setLogs(prev => [...prev, e.record as LogData]);
+        }
+      });
+
+      // Store the unsubscribe function once the promise resolves
+      unsubscribePromise.then(func => {
+        unsubscribeFunc = func;
+      }).catch(err => {
+        const errorMessage = handleError(err, 'establish real-time connection');
+        setError(errorMessage);
+      });
+
+      // Cleanup subscription on unmount
+      return () => {
+        if (unsubscribeFunc) {
+          unsubscribeFunc();
+        }
+      };
+    } catch (err) {
+      const errorMessage = handleError(err, 'establish real-time connection');
+      setError(errorMessage);
+      return () => { }; // Empty cleanup function
+    }
+  }, [fetchLogs, handleError]);
+
+  // Handle command submission
+  const handleSubmitCommand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!command.trim()) return;
+
+    // Here you would send the command to your backend
+    // For now, just log it to the console
+    console.log('Command submitted:', command);
+    setCommand('');
+  };
+
+  // Format logs display
+  const renderLogs = () => {
+    if (logs.length === 0 && !loading && !error) {
+      return <code className={classes.line}>No logs available.</code>;
+    }
+
+    return logs.map((log) => (
+      <code
+        key={log.id}
+        className={classes.line}
+        style={{
+          whiteSpace: 'pre-wrap',
+          display: 'block'
+        }}
+      >
+        {log.log_msg}
+      </code>
     ));
+  };
 
-    const viewport = useRef<HTMLDivElement>(null);
+  return (
+    <Stack className={classes.container} style={{ width: '100%' }}>
+      <div className={classes.feedContainer} style={{
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {loading && <LoadingOverlay visible={true} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />}
 
-    const scrollToBottom = () =>
-        viewport.current!.scrollTo({ top: viewport.current!.scrollHeight, behavior: 'smooth' });
+        {error && (
+          <Alert icon={<IconAlertCircle size={16} />} color="red" title="Error" withCloseButton onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-    return (
-        <Stack className={classes.container}>
-            <div className={classes.feedContainer}>
-                <Stack className={classes.feed} justify="left" gap="0px" ref={viewport}>
-                    {lines}
-                </Stack>
-                <ActionIcon title='Jump to bottom' onClick={scrollToBottom} variant='white' size="xl" className={classes.jump}>
-                    <IconArrowDown className='classes.icon' stroke={1.5} />
-                </ActionIcon>
-            </div>
-            <Divider />
-            <div className={classes.sender}>
-                <TextInput className={classes.input}
-                    data-autofocus
-                    variant="unstyled"
-                    placeholder="Command"
-                />
-                <ActionIcon title='Send' size="xl">
-                    <IconSend className='classes.icon' stroke={1.5} />
-                </ActionIcon>
-
-            </div>
+        <Stack
+          className={classes.feed}
+          justify="left"
+          gap="0px"
+          ref={viewport}
+          style={{
+            padding: 'var(--mantine-spacing-md)',
+            flexGrow: 1,
+            overflowY: 'auto',
+            overflowX: 'auto'
+          }}
+        >
+          {renderLogs()}
         </Stack>
-    );
+
+        <ActionIcon
+          title='Jump to bottom'
+          onClick={scrollToBottom}
+          variant='white'
+          size="xl"
+          className={classes.jump}
+        >
+          <IconArrowDown className={classes.icon} stroke={1.5} />
+        </ActionIcon>
+      </div>
+      <Divider />
+      <form
+        onSubmit={handleSubmitCommand}
+        className={classes.sender}
+        style={{
+          flexGrow: 0,
+          height: 'auto',
+          minHeight: '56px',
+          maxHeight: '56px'
+        }}
+      >
+        <TextInput
+          className={classes.input}
+          data-autofocus
+          variant="unstyled"
+          placeholder="Command"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+        />
+        <ActionIcon
+          title='Send'
+          size="xl"
+          type="submit"
+          disabled={!command.trim()}
+        >
+          <IconSend className={classes.icon} stroke={1.5} />
+        </ActionIcon>
+      </form>
+    </Stack>
+  );
 }
