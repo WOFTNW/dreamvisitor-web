@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Combobox, InputBase, Loader, useCombobox } from '@mantine/core';
 
 const MOCKDATA = [
@@ -30,7 +30,19 @@ const channels = [
 
 const allGroceries = channels.reduce<string[]>((acc, group) => [...acc, ...group.options], []);
 
-export function SelectChannel({ ...props }) {
+export function SelectChannel({
+  value: externalValue,
+  onChange,
+  label,
+  description,
+  ...props
+}: {
+  value?: string | number | null;
+  onChange?: (value: string | number) => void;
+  label?: string;
+  description?: string;
+  [key: string]: any;
+}) {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
     onDropdownOpen: () => {
@@ -49,6 +61,11 @@ export function SelectChannel({ ...props }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<string[]>([]);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    setValue(externalValue !== undefined ? String(externalValue) : null);
+    setSearch(externalValue !== undefined ? String(externalValue) : '');
+  }, [externalValue]);
 
   const shouldFilterOptions = allGroceries.every((item) => item !== search);
   const filteredGroups = channels.map((group) => {
@@ -75,22 +92,28 @@ export function SelectChannel({ ...props }) {
     );
   });
 
+  const handleValueChange = (newValue: string) => {
+    setValue(newValue);
+    setSearch(newValue);
+    if (onChange) {
+      const numericValue = !isNaN(Number(newValue)) ? Number(newValue) : newValue;
+      onChange(numericValue);
+    }
+    combobox.closeDropdown();
+  };
+
   return (
     <Combobox
       store={combobox}
       withinPortal={false}
-      onOptionSubmit={(val) => {
-        setValue(val);
-        setSearch(val);
-        combobox.closeDropdown();
-      }}
+      onOptionSubmit={handleValueChange}
     >
       <Combobox.Target>
         <InputBase
-          label={props.label}
-          description={props.description}
+          label={label}
+          description={description}
           rightSection={loading && <Loader size={18} />}
-          value={search}
+          value={search || ''}
           onChange={(event) => {
             combobox.openDropdown();
             combobox.updateSelectedOptionIndex();
