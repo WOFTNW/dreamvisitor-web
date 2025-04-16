@@ -455,8 +455,9 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
       if (config.id) {
         await pb.collection('dreamvisitor_config').update(config.id, recordData);
       } else {
-        const record = await pb.collection('dreamvisitor_config').create(recordData);
-        setConfig(prev => ({ ...prev, id: record.id }));
+        // const record = await pb.collection('dreamvisitor_config').create(recordData);
+        // setConfig(prev => ({ ...prev, id: record.id }));
+        console.log("Error no config was fetched from the server")
       }
 
       setOriginalConfig({ ...config });
@@ -511,13 +512,6 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
       }
     }
   }, [config.id, convertRecord]);
-
-  const handleRoleSelect = useCallback((roleName: string, roleId: string | null) => {
-    setConfig(prev => ({
-      ...prev,
-      [roleName]: roleId ? parseInt(roleId, 10) : null
-    }));
-  }, []);
 
   // Check if there are unsaved changes
   const hasChanges = useMemo(() => {
