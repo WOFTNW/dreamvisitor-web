@@ -21,9 +21,9 @@ export function ConfigPage() {
               <Tabs.Tab value="dreamvisitor" leftSection={<IconTool />}>
                 Dreamvisitor
               </Tabs.Tab>
-              <Tabs.Tab value="economy" leftSection={<IconMoneybag />}>
+              {/* <Tabs.Tab value="economy" leftSection={<IconMoneybag />}>
                 Economy
-              </Tabs.Tab>
+              </Tabs.Tab> */}
             </Tabs.List>
 
             <Tabs.Panel value="server">
