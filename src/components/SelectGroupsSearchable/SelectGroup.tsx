@@ -38,8 +38,7 @@ export function SelectGroup({...props}) {
     ));
 
   return (
-    <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={false} label={props.label}
-    description={props.description}>
+    <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={false}>
       <Combobox.DropdownTarget>
         <PillsInput onClick={() => combobox.openDropdown()}>
           <Pill.Group>
