@@ -136,7 +136,10 @@ const BasicSettings = memo(({ config, setConfig, space }: {
         placeholder='WOFTNW/Dragonspeak'
         description='The repository path of the server resource pack. Dreamvisitor will pull the first artifact from the latest release on pack update.'
         value={config?.resourcePackRepo || ''}
-        onChange={(e) => handleTextChange('resourcePackRepo', e.currentTarget.value)}
+        onChange={(e) => {
+          const { value } = e.currentTarget;
+          setConfig(prev => ({ ...prev, resourcePackRepo: value }))
+        }}
       />
     </>
   );
@@ -394,7 +397,7 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
         unsubscribe();
       }
     };
-  }, [config.id, loading, convertRecord, originalConfig, config]);
+  }, [config.id, loading, convertRecord, originalConfig]);
 
   const handleApply = useCallback(async () => {
     try {
@@ -631,7 +634,11 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
             placeholder='https://woftnw.org'
             description='The URL for the whitelisting website. Used to restrict requests not from the specified website to prevent abuse.'
             value={config?.websiteUrl || ''}
-            onChange={(e) => setConfig(prev => ({ ...prev, websiteUrl: e.currentTarget.value }))}
+            type='url'
+            onChange={(e) => {
+              const { value } = e.currentTarget;
+              setConfig(prev => ({ ...prev, websiteUrl: value }))
+            }}
           />
         </Fieldset>
 

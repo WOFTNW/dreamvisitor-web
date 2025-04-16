@@ -14,7 +14,7 @@ const MemoizedSelectCategory = memo(SelectCategory);
 
 function InfractionsFieldset({ config, setConfig, space }: InfractionsFieldsetProps) {
   // Debounce number input changes
-  const handleNumberChange = useDebouncedCallback((value: number | string| null) => {
+  const handleNumberChange = useDebouncedCallback((value: number | string | null) => {
     setConfig((prev: any) => ({ ...prev, infractionExpireTimeDays: Number(value) }));
   }, 300);
 
