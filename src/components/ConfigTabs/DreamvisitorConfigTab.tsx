@@ -88,11 +88,6 @@ const BasicSettings = memo(({ config, setConfig, space }: {
   const handleNumberChange = useDebouncedCallback((field: keyof ConfigState, value: number | null) => {
     setConfig(prev => ({ ...prev, [field]: value === null ? 0 : value }));
   }, 300);
-
-  const handleTextChange = useDebouncedCallback((field: keyof ConfigState, value: string) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
-  }, 300);
-
   // Make sure config is safe to use
   if (!config) return null;
 
@@ -139,14 +134,14 @@ const BasicSettings = memo(({ config, setConfig, space }: {
       />
       <Space h={space} />
       <NumberInput
-        label='Player Limit Override'
+        label='Whitelist Port'
         description='The port to use to accept web whitelist requests.'
         value={config?.whitelistPort ?? 0}
         onChange={(val) => handleNumberChange('whitelistPort', val === "" ? 0 : Number(val))}
       />
       <Space h={space} />
       <NumberInput
-        label='Whitelist Port'
+        label='Player Limit Override'
         description='Player limit override. This will override the player limit, both over and under. This can be set in Minecraft with /playerlimit <int>'
         value={config?.playerLimit ?? 0}
         onChange={(val) => handleNumberChange('playerLimit', val === "" ? 0 : Number(val))}
