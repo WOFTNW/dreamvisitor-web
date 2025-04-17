@@ -19,6 +19,8 @@ const toCamelCase = (str: string): string => {
 const EconomyFieldset = lazy(() => import('./EconomyFieldset'));
 const InfractionsFieldset = lazy(() => import('./InfractionsFieldset'));
 const MailFieldset = lazy(() => import('./MailFieldset'));
+const FlightFieldset = lazy(() => import('./FlightFieldset'));
+const InactivityTaxFieldset = lazy(() => import('./InactivityTaxFieldset'));
 
 // Using memo to prevent unnecessary re-renders
 const MemoizedLocationInput = memo(LocationInput);
@@ -44,7 +46,9 @@ interface ConfigState {
   softWhitelist: boolean;
   disablePvP: boolean;
   playerLimit: number;
+  whitelistPort: number;
   resourcePackRepo: string | null;
+  noWitherNotice: string | null;
   hubLocation: Location | null;
   whitelistChannel: number | null;
   gameChatChannel: number | null;
@@ -63,6 +67,16 @@ interface ConfigState {
   mailDeliveryLocationSelectionDistanceWeightMultiplier: number;
   mailDistanceToRewardMultiplier: number;
   consoleSize: number;
+  flightEnergyCapacity: number,
+  flightRegenerationPoint: number,
+  flightEnergyRegeneration: number,
+  flightEnergyDepletionXZMultiplier: number,
+  flightEnergyDepletionYMultiplier: number,
+  daysUntilInactiveTax: number,
+  inactiveTaxPercent: number,
+  inactiveDayFrequency: number,
+  inactiveTaxStop: number,
+  lastInactiveTax: number
 }
 
 // Basic settings component to reduce main component size
@@ -74,11 +88,6 @@ const BasicSettings = memo(({ config, setConfig, space }: {
   const handleNumberChange = useDebouncedCallback((field: keyof ConfigState, value: number | null) => {
     setConfig(prev => ({ ...prev, [field]: value === null ? 0 : value }));
   }, 300);
-
-  const handleTextChange = useDebouncedCallback((field: keyof ConfigState, value: string) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
-  }, 300);
-
   // Make sure config is safe to use
   if (!config) return null;
 
@@ -125,6 +134,13 @@ const BasicSettings = memo(({ config, setConfig, space }: {
       />
       <Space h={space} />
       <NumberInput
+        label='Whitelist Port'
+        description='The port to use to accept web whitelist requests.'
+        value={config?.whitelistPort ?? 0}
+        onChange={(val) => handleNumberChange('whitelistPort', val === "" ? 0 : Number(val))}
+      />
+      <Space h={space} />
+      <NumberInput
         label='Player Limit Override'
         description='Player limit override. This will override the player limit, both over and under. This can be set in Minecraft with /playerlimit <int>'
         value={config?.playerLimit ?? 0}
@@ -139,6 +155,17 @@ const BasicSettings = memo(({ config, setConfig, space }: {
         onChange={(e) => {
           const { value } = e.currentTarget;
           setConfig(prev => ({ ...prev, resourcePackRepo: value }))
+        }}
+      />
+      <Space h={space} />
+      <TextInput
+        label='No Wither Notice'
+        placeholder='Withers cannot be spawned here. You can only spawn Withers in the Wither chamber.'
+        description='The message sent if a Wither is built in a region where the wither flag is denied.'
+        value={config?.noWitherNotice || ''}
+        onChange={(e) => {
+          const { value } = e.currentTarget;
+          setConfig(prev => ({ ...prev, noWitherNotice: value }))
         }}
       />
     </>
@@ -212,7 +239,9 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
     softWhitelist: false,
     disablePvP: false,
     playerLimit: -1,
+    whitelistPort: 10826,
     resourcePackRepo: "WOFTNW/Dragonspeak",
+    noWitherNotice: "Withers cannot be spawned here. You can only spawn Withers in the Wither chamber.",
     hubLocation: null,
     whitelistChannel: null,
     gameChatChannel: null,
@@ -231,6 +260,16 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
     mailDeliveryLocationSelectionDistanceWeightMultiplier: 1.00,
     mailDistanceToRewardMultiplier: 0.05,
     consoleSize: 512,
+    flightEnergyCapacity: 400,
+    flightRegenerationPoint: 200.00,
+    flightEnergyRegeneration: 1.00,
+    flightEnergyDepletionXZMultiplier: 4.00,
+    flightEnergyDepletionYMultiplier: 10.00,
+    daysUntilInactiveTax: 60,
+    inactiveTaxPercent: 0.1,
+    inactiveDayFrequency: 7,
+    inactiveTaxStop: 50000,
+    lastInactiveTax: 0
   }));
 
   const [originalConfig, setOriginalConfig] = useState<ConfigState>({ ...config });
@@ -643,6 +682,10 @@ export function DreamvisitorConfigTab({ space }: DreamvisitorConfigTabProps) {
         {renderLazyComponent(EconomyFieldset, { config, setConfig, space })}
         <Space h={space} />
         {renderLazyComponent(MailFieldset, { config, setConfig, space })}
+        <Space h={space} />
+        {renderLazyComponent(FlightFieldset, { config, setConfig, space })}
+        <Space h={space} />
+        {renderLazyComponent(InactivityTaxFieldset, { config, setConfig, space })}
         <Space h={space} />
         <Divider />
         <Space h={space} />
