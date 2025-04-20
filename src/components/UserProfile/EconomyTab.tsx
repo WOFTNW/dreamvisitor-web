@@ -23,19 +23,19 @@ export function EconomyTab({ userData, inventory }: EconomyTabProps) {
       </Paper>
 
       <Paper p="md" withBorder>
-        <Title order={4} mb="md">Inventory ({inventory.length} items)</Title>
+        <Title order={4} mb="md">Inventory ({inventory.length} {inventory.length == 1 ? "item" : "items"})</Title>
         {inventory.length > 0 ? (
           inventory.map(invItem => {
             const item = invItem.expand?.item;
             return (
               <Paper key={invItem.id} p="sm" withBorder mb="sm">
-                <Group justify="space-around">
+                <Group>
                   <Text fw={700}>{item?.name || "Unknown Item"}</Text>
                   <Badge>Qty: {invItem.quantity}</Badge>
                 </Group>
                 <Text size="sm">{item?.description || "No description"}</Text>
                 <Group mt="xs">
-                  <Text size="xs" c="dimmed">Value: {item?.price || 0}</Text>
+                  <Text size="xs" c="dimmed">Cost: {item?.price || 0}</Text>
                   {item?.sale_percent ? (
                     <Badge color="green">Sale: {item.sale_percent}% off</Badge>
                   ) : null}

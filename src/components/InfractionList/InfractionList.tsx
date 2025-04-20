@@ -1,4 +1,4 @@
-import { Accordion, Badge, Group, Text } from '@mantine/core';
+import { Accordion, Badge, Group, Space, Text } from '@mantine/core';
 import { Infraction } from '@/types/models';
 
 interface InfractionListProps {
@@ -23,14 +23,14 @@ export function InfractionList({ infractions }: InfractionListProps) {
               {new Date(item.created).toLocaleDateString()}
             </Text>
           </Group>
-          {getBadge(item.expired)}
+          <Group>
+            {getBadge(item.expired)}
+          <Space w='s'></Space>
+          </Group>
         </Group>
       </Accordion.Control>
       <Accordion.Panel>
         <Text>{item.reason || "No reason provided"}</Text>
-        {item.warn_channel_id && (
-          <Text size="sm" mt="xs">Warning issued in channel: {item.warn_channel_id}</Text>
-        )}
         <Text size="xs" c="dimmed" mt="xs">
           Created: {new Date(item.created).toLocaleString()}
         </Text>
