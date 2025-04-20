@@ -5,6 +5,8 @@ import { Avatar, Badge, Button, Checkbox, FileInput, Group, LoadingOverlay, Moda
 import { useDisclosure } from '@mantine/hooks';
 import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconCoin, IconMoneybag, IconUser } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
+import { EconomyTab } from './EconomyTab';
+import { InfractionsTab } from './InfractionsTab';
 
 interface UserProfileProps {
   opened: boolean;
@@ -22,19 +24,6 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [modalLoading, { toggle: toggleModalLoading }] = useDisclosure(false);
   const previousUserIdRef = useRef<string | null | undefined>(null);
   const isCurrentlyFetchingRef = useRef(false);
-
-  const tribeColors: Record<string, string> = {
-    hivewing: 'orange',
-    icewing: 'lightblue',
-    leafwing: 'darkgreen',
-    mudwing: 'brown',
-    nightwing: 'purple',
-    rainwing: 'green',
-    sandwing: 'yellow',
-    seawing: 'blue',
-    silkwing: 'pink',
-    skywing: 'red',
-  };
 
   // Fetch user data only when userId changes or the component becomes visible
   useEffect(() => {
@@ -66,8 +55,10 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         if (!userId) {
           console.error('Failed to fetch user data:');
           setError('Failed to load user data. Please try again later.');
-          return
+          return;
         }
+
+        // Modify the expand parameter to include a higher limit for infractions
         const user = await pb.collection('users').getOne(userId, {
           expand: 'infractions,inventory_items.item',
           $cancelKey: `user-profile-${userId}`,
@@ -105,7 +96,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     fetchUserData();
   }, [opened, userId]);
 
-  const handleCreateInfraction = async (infractionData: { value: number, reason: string }) => {
+  const handleCreateInfraction = async (infractionData: { value: number, reason: string, warn_channel_id?: number }) => {
     if (!userData || !userId) return;
 
     try {
@@ -115,12 +106,13 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         reason: infractionData.reason,
         value: infractionData.value,
         user: userData.id,
-        expired: false
+        expired: false,
+        warn_channel_id: infractionData.warn_channel_id || null,
       });
 
       // Refresh infractions with a unique cancel key
       const updatedUser = await pb.collection('users').getOne(userId, {
-        expand: 'infractions',
+        expand: 'infractions(user)[limit=100]',
         $cancelKey: `refresh-infractions-${Date.now()}`,
       });
 
@@ -199,9 +191,6 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     );
   }
 
-  // For demonstration, we'll keep the static avatar and use dynamic data for the rest
-  const avatarUrl = 'https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp';
-
   // Rest of the component renders user data when available
   return (
     <div style={{ gridColumn: 1, gridRow: 1 }}>
@@ -213,7 +202,9 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
           const formData = new FormData(form);
           const value = Number(formData.get('value'));
           const reason = formData.get('reason') as string;
-          handleCreateInfraction({ value, reason });
+          const warn_channel_id = formData.get('warn_channel_id') ?
+            Number(formData.get('warn_channel_id')) : undefined;
+          handleCreateInfraction({ value, reason, warn_channel_id });
         }}>
           <NumberInput
             data-autofocus
@@ -231,15 +222,15 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             description="(Optional) Add a reason for this infraction."
           />
           <Space h="md" />
-          <FileInput
-            label="Proof"
-            description="Attach a proof file"
-            placeholder="Input placeholder"
+          <NumberInput
+            label="Warn Channel ID"
+            name="warn_channel_id"
+            description="Discord channel ID where the warning going to be issued"
+            placeholder="Enter channel ID"
           />
           <Space h="md" />
           <Checkbox label="Send a warn message" description='Whether to notify the user they have been warned.' defaultChecked />
           <Space h="md" />
-          <Checkbox label="Include proof in message" description='Whether to include the proof file in the warn message.' defaultChecked />
           <Space h="md" />
           <Button type="submit">Create</Button>
         </form>
@@ -261,7 +252,8 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             {userData && (
               <>
                 <Group gap="var(--mantine.spacing.md)">
-                  <Avatar size="xl" src={avatarUrl} alt="Avatar" />
+                  {/* TODO: Fetch This From Pocketbase */}
+                  <Avatar size="xl" src={pb.files.getURL(userData, userData.discord_img)} alt="Avatar" />
                   <Stack gap={0}>
                     <Group gap="var(--mantine-spacing-sm)">
                       <Title order={2}>{userData.discord_id}</Title>
@@ -306,67 +298,17 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                   </Tabs.Panel>
 
                   <Tabs.Panel value="infractions">
-                    <Space h="md" />
-                    <Paper p="md" withBorder>
-                      {infractions.length > 0 ? (
-                        infractions.map(infraction => (
-                          <Paper key={infraction.id} p="sm" withBorder mb="sm">
-                            <Group justify="space-between">
-                              <Text fw={700}>Points: {infraction.value}</Text>
-                              <Badge color={infraction.expired ? "gray" : "red"}>
-                                {infraction.expired ? "Expired" : "Active"}
-                              </Badge>
-                            </Group>
-                            <Text>{infraction.reason || "No reason provided"}</Text>
-                            <Text size="xs" c="dimmed">Issued on: {new Date(infraction.created).toLocaleString()}</Text>
-                          </Paper>
-                        ))
-                      ) : (
-                        <Text>No infractions found</Text>
-                      )}
-                    </Paper>
-                    <Space h="md" />
-                    <Button onClick={open}>New Infraction</Button>
+                    <InfractionsTab
+                      infractions={infractions}
+                      onNewInfraction={open}
+                    />
                   </Tabs.Panel>
 
                   <Tabs.Panel value="economy">
-                    <Space h="md" />
-                    <Paper p="md" withBorder mb="md">
-                      <Title order={4} mb="md">Economy Overview</Title>
-                      <Group align="center" gap="xs" mb="sm">
-                        <IconCoin size={20} />
-                        <Text fw={700}>Balance: {userData.balance}</Text>
-                      </Group>
-                      <Text><strong>Daily Streak:</strong> {userData.daily_streak}</Text>
-                      <Text><strong>Last Daily Claim:</strong> {new Date(userData.last_daily).toLocaleString()}</Text>
-                      <Text><strong>Last Work:</strong> {new Date(userData.last_work).toLocaleString()}</Text>
-                    </Paper>
-
-                    <Paper p="md" withBorder>
-                      <Title order={4} mb="md">Inventory ({inventory.length} items)</Title>
-                      {inventory.length > 0 ? (
-                        inventory.map(invItem => {
-                          const item = invItem.expand?.item;
-                          return (
-                            <Paper key={invItem.id} p="sm" withBorder mb="sm">
-                              <Group justify="space-around">
-                                <Text fw={700}>{item?.name || "Unknown Item"}</Text>
-                                <Badge>Qty: {invItem.quantity}</Badge>
-                              </Group>
-                              <Text size="sm">{item?.description || "No description"}</Text>
-                              <Group mt="xs">
-                                <Text size="xs" c="dimmed">Value: {item?.price || 0}</Text>
-                                {item?.sale_percent ? (
-                                  <Badge color="green">Sale: {item.sale_percent}% off</Badge>
-                                ) : null}
-                              </Group>
-                            </Paper>
-                          );
-                        })
-                      ) : (
-                        <Text>No items in inventory</Text>
-                      )}
-                    </Paper>
+                    <EconomyTab
+                      userData={userData}
+                      inventory={inventory}
+                    />
                   </Tabs.Panel>
                 </Tabs>
               </>

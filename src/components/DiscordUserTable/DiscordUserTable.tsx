@@ -1,6 +1,7 @@
 import { User } from '@/types/models';
 import { Avatar, Badge, Table, Text } from '@mantine/core';
 import classes from './DiscordUserTable.module.css';
+import { pb } from '@/lib/pocketbase';
 
 
 interface DiscordUserTableProps {
@@ -22,7 +23,7 @@ export function DiscordUserTable({ setOpened, users, onUserSelect }: DiscordUser
     >
       <Table.Td>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Avatar size="md" radius="xl" />
+          <Avatar src={pb.files.getURL(user, user.discord_img)} size="md" radius="xl" />
           <Text>{user.discord_id}</Text>
         </div>
       </Table.Td>

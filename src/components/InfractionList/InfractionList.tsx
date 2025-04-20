@@ -1,52 +1,46 @@
-import { Accordion, Badge, Group } from '@mantine/core';
+import { Accordion, Badge, Group, Text } from '@mantine/core';
+import { Infraction } from '@/types/models';
 
-const groceries = [
-    {
-        date: '01/01/2001',
-        value: 1,
-        reason:
-            'Crisp and refreshing fruit. Apples are known for their versatility and nutritional benefits. They come in a variety of flavors and are great for snacking, baking, or adding to salads.',
-        expired: true
-    },
-    {
-        date: '02/02/2002',
-        value: 0,
-        reason:
-            'Naturally sweet and potassium-rich fruit. Bananas are a popular choice for their energy-boosting properties and can be enjoyed as a quick snack, added to smoothies, or used in baking.',
-        expired: true
-    },
-    {
-        date: '03/30/2035',
-        value: 2,
-        reason:
-            'Nutrient-packed green vegetable. Broccoli is packed with vitamins, minerals, and fiber. It has a distinct flavor and can be enjoyed steamed, roasted, or added to stir-fries.',
-        expired: false
-    },
-];
+interface InfractionListProps {
+  infractions: Infraction[];
+}
 
-export function InfractionList() {
-    function badge(expired: boolean) {
-        if (expired) {
-            return <Badge variant='light'>Expired</Badge>
-        }
-    }
+export function InfractionList({ infractions }: InfractionListProps) {
+  function getBadge(expired: boolean) {
+    return expired ?
+      <Badge variant='light' color="gray">Expired</Badge> :
+      <Badge variant='light' color="red">Active</Badge>;
+  }
 
-    // See groceries data above
-    const items = groceries.map((item) => (
-        <Accordion.Item value={item.date}>
-            <Accordion.Control>
-                <Group>
-                    {item.date}
-                    {badge(item.expired)}
-                </Group>
-            </Accordion.Control>
-            <Accordion.Panel>{item.reason}</Accordion.Panel>
-        </Accordion.Item>
-    ));
+  // Use real infractions data
+  const items = infractions.map((item) => (
+    <Accordion.Item key={item.id} value={item.id}>
+      <Accordion.Control>
+        <Group justify="space-between">
+          <Group>
+            <Text fw={700}>Points: {item.value}</Text>
+            <Text size="sm" c="dimmed">
+              {new Date(item.created).toLocaleDateString()}
+            </Text>
+          </Group>
+          {getBadge(item.expired)}
+        </Group>
+      </Accordion.Control>
+      <Accordion.Panel>
+        <Text>{item.reason || "No reason provided"}</Text>
+        {item.warn_channel_id && (
+          <Text size="sm" mt="xs">Warning issued in channel: {item.warn_channel_id}</Text>
+        )}
+        <Text size="xs" c="dimmed" mt="xs">
+          Created: {new Date(item.created).toLocaleString()}
+        </Text>
+      </Accordion.Panel>
+    </Accordion.Item>
+  ));
 
-    return (
-        <Accordion variant="contained">
-            {items}
-        </Accordion>
-    );
+  return (
+    <Accordion variant="contained">
+      {items.length > 0 ? items : <Text p="md">No infractions found</Text>}
+    </Accordion>
+  );
 }
