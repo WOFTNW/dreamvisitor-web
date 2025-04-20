@@ -1,75 +1,45 @@
-import { Avatar, Badge, Table, Group, Text, ActionIcon, rem } from '@mantine/core';
-import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { User } from '@/types/models';
+import { Avatar, Badge, Table, Text } from '@mantine/core';
 import classes from './DiscordUserTable.module.css';
+import { pb } from '@/lib/pocketbase';
 
-const data = [
-  {
-    avatar:
-      'https://images-ext-1.discordapp.net/external/qz4gfnMc9Z4674MjYCSJvpR8yFRdRbsCl2NoatRmv4k/https/cdn.discordapp.com/avatars/505833634134228992/3d9555731affb8dba56ec02071d4f1e7.webp',
-    nickname: 'Bog',
-    username: 'stonleyfx',
-    minecraft: 'BogTheMudWing',
-    standing: 'Good'
-  },
-  {
-    avatar:
-      'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-7.png',
-    nickname: 'tetchy',
-    username: 'tetchytick',
-    minecraft: 'tetchytick',
-    standing: 'Tempbanned'
-  },
-  {
-    avatar:
-      'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-2.png',
-    nickname: 'TNTCreeper',
-    username: 'realtntcreeper',
-    minecraft: 'RealTNTCreeper',
-    standing: 'Banned'
-  },
-  {
-    minecraft: 'NotADiscordUser',
-    standing: 'Good'
-  }
-];
 
-const standingColors: Record<string, string> = {
-  good: 'green',
-  tempbanned: 'yellow',
-  banned: 'red',
-};
+interface DiscordUserTableProps {
+  setOpened: (value: boolean) => void;
+  users: User[];
+  onUserSelect: (userId: string) => void;
+}
 
-export function DiscordUserTable({ setOpened }: { setOpened: (value: boolean) => void  }) {
-  const rows = data.map((item) => (
-    <Table.Tr key={item.username} onClick={() => setOpened(false)} >
+export function DiscordUserTable({ setOpened, users, onUserSelect }: DiscordUserTableProps) {
+
+  const rows = users.map((user) => (
+    <Table.Tr
+      key={user.id}
+      className={classes.row}
+      onClick={() => {
+        onUserSelect(user.id);
+        setOpened(false);
+      }}
+    >
       <Table.Td>
-        <Group gap="sm">
-          <Avatar size={30} src={item.avatar} radius={30} />
-          <div>
-            <Text fz="sm" fw={500}>
-              {item.nickname}
-            </Text>
-            <Text c="dimmed" fz="xs">
-              {item.username}
-            </Text>
-          </div>
-        </Group>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Avatar src={pb.files.getURL(user, user.discord_img)} size="md" radius="xl" />
+          <Text>{user.discord_id}</Text>
+        </div>
       </Table.Td>
-
+      <Table.Td>{user.mc_username}</Table.Td>
       <Table.Td>
-        <Text fz="sm">{item.minecraft}</Text>
-      </Table.Td>
-
-      <Table.Td>
-        <Badge color={standingColors[item.standing.toLowerCase()]} variant="light">
-          {item.standing}
+        <Badge
+          color={user.is_banned ? "red" : user.is_suspended ? "orange" : "green"}
+        >
+          {user.is_banned ? "Banned" : user.is_suspended ? "Suspended" : "Active"}
         </Badge>
       </Table.Td>
     </Table.Tr>
   ));
 
   return (
-    <Table.ScrollContainer minWidth="auto">
+    <Table.ScrollContainer minWidth={500} py="md">
       <Table verticalSpacing="sm">
         <Table.Thead>
           <Table.Tr className={classes.top}>
