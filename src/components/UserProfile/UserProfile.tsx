@@ -58,7 +58,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
           return;
         }
 
-        // Modify the expand parameter to include a higher limit for infractions
+        // Modify the expand parameter to include a higher limit for infractions if needed
         const user = await pb.collection('users').getOne(userId, {
           expand: 'infractions,inventory_items.item',
           $cancelKey: `user-profile-${userId}`,
@@ -96,7 +96,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     fetchUserData();
   }, [opened, userId]);
 
-  const handleCreateInfraction = async (infractionData: { value: number, reason: string, warn_channel_id?: number }) => {
+  const handleCreateInfraction = async (infractionData: { value: number, reason: string, sendWarnning?: boolean }) => {
     if (!userData || !userId) return;
 
     try {
@@ -105,21 +105,25 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
       await pb.collection('infractions').create({
         reason: infractionData.reason,
         value: infractionData.value,
+        send_warning: infractionData.sendWarnning,
         user: userData.id,
         expired: false,
-        warn_channel_id: infractionData.warn_channel_id || null,
       });
 
-      // Refresh infractions with a unique cancel key
-      const updatedUser = await pb.collection('users').getOne(userId, {
-        expand: 'infractions(user)[limit=100]',
-        $cancelKey: `refresh-infractions-${Date.now()}`,
+      // Modify the expand parameter to include a higher limit for infractions if needed
+      const user = await pb.collection('users').getOne(userId, {
+        expand: 'infractions,inventory_items.item',
+        $cancelKey: `user-profile-${userId}`,
       });
 
-      if (updatedUser.expand?.infractions) {
-        setInfractions(updatedUser.expand.infractions as unknown as Infraction[]);
+      setUserData(user as unknown as User);
+
+      // Extract expanded relations
+      if (user.expand?.infractions) {
+        setInfractions(user.expand.infractions as unknown as Infraction[]);
+      } else {
+        setInfractions([]);
       }
-
       close();
     } catch (err) {
       console.error('Failed to create infraction:', err);
@@ -202,9 +206,8 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
           const formData = new FormData(form);
           const value = Number(formData.get('value'));
           const reason = formData.get('reason') as string;
-          const warn_channel_id = formData.get('warn_channel_id') ?
-            Number(formData.get('warn_channel_id')) : undefined;
-          handleCreateInfraction({ value, reason, warn_channel_id });
+          const sendWarnning = Boolean(formData.get("send_warning"));
+          handleCreateInfraction({ value, reason, sendWarnning });
         }}>
           <NumberInput
             data-autofocus
@@ -222,15 +225,12 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             description="(Optional) Add a reason for this infraction."
           />
           <Space h="md" />
-          <NumberInput
-            label="Warn Channel ID"
-            name="warn_channel_id"
-            description="Discord channel ID where the warning going to be issued"
-            placeholder="Enter channel ID"
+          <Checkbox
+            name='send_warning'
+            label="Send a warn message"
+            description='Whether to notify the user they have been warned.'
+            defaultChecked
           />
-          <Space h="md" />
-          <Checkbox label="Send a warn message" description='Whether to notify the user they have been warned.' defaultChecked />
-          <Space h="md" />
           <Space h="md" />
           <Button type="submit">Create</Button>
         </form>

@@ -64,7 +64,7 @@ export interface Infraction {
   id: string;
   reason: string;
   expired: boolean;
-  warn_channel_id: number;
+  sendWarning: boolean;
   value: number;
   user: string;
   created: string;
