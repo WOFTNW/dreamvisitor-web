@@ -5,7 +5,7 @@ import { pb } from '@/lib/pocketbase';
 
 
 interface DiscordUserTableProps {
-  setOpened: (value: boolean) => void;
+  setOpened: (value: boolean, userId?: string) => void;
   users: User[];
   onUserSelect: (userId: string) => void;
 }
@@ -18,7 +18,7 @@ export function DiscordUserTable({ setOpened, users, onUserSelect }: DiscordUser
       className={classes.row}
       onClick={() => {
         onUserSelect(user.id);
-        setOpened(false);
+        setOpened(false, user.id);
       }}
     >
       <Table.Td>
