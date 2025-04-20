@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { NavbarSimple } from '@/components/NavbarSimple/NavbarSimple';
 import { ActionIcon, Alert, Button, Grid, Group, LoadingOverlay, NumberInput, Paper, Space, Text, Title, Tooltip } from '@mantine/core';
-import { pb } from '@/lib/pocketbase';
+import { pb, isUserAuthenticated } from '@/lib/pocketbase';
 import { IconAlertCircle, IconCheck, IconRefresh } from '@tabler/icons-react';
 import { ClientResponseError } from 'pocketbase';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Interface for server data response
 interface ServerData {
@@ -34,23 +35,47 @@ export function HomePage() {
   const [playerLimit, setPlayerLimit] = useState<number | ''>(0);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
+  const { user } = useAuth();
+
+  // Check if server is available
+  const checkServerAvailability = useCallback(async () => {
+    try {
+      // Simple health check
+      await fetch(`${import.meta.env.VITE_PB_URL || 'http://127.0.0.1:8090'}/api/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      setServerAvailable(true);
+      return true;
+    } catch (err) {
+      console.error('Server availability check failed:', err);
+      setServerAvailable(false);
+      setError({
+        message: 'Cannot connect to the server. Please check if the server is running.',
+        type: 'network',
+        retryable: true,
+        details: err instanceof Error ? err.message : 'Connection failed'
+      });
+      return false;
+    }
+  }, []);
 
   // Helper function to handle errors
   const handleError = useCallback((err: unknown, operation: string): AppError => {
     console.error(`Error during ${operation}:`, err);
 
-    // Default error
     let appError: AppError = {
       message: `Failed to ${operation}. Please try again later.`,
       type: 'unknown',
       retryable: true,
     };
 
-    // Handle PocketBase-specific errors
     if (err instanceof ClientResponseError) {
       if (err.status === 401 || err.status === 403) {
         appError = {
-          message: 'You do not have permission to perform this action.',
+          message: 'You do not have permission to perform this action. Please sign in with an admin account.',
           type: 'auth',
           retryable: false,
           details: err.message
@@ -78,7 +103,6 @@ export function HomePage() {
         };
       }
     } else if (err instanceof Error) {
-      // Network errors (like fetch failures)
       if (err.message.includes('network') || err.message.includes('fetch')) {
         appError = {
           message: 'Network connection error. Please check your internet connection.',
@@ -99,54 +123,95 @@ export function HomePage() {
     return appError;
   }, []);
 
-  // Function to fetch server data with retry logic
   const fetchServerData = useCallback(async (isRetry = false) => {
     try {
       if (!isRetry) {
         setLoading(true);
       }
 
+      const isAvailable = await checkServerAvailability();
+      if (!isAvailable) {
+        setLoading(false);
+        return;
+      }
+
+      const needsAuth = true;
+      if (needsAuth && !isUserAuthenticated()) {
+        setError({
+          message: 'Please sign in to access server data.',
+          type: 'auth',
+          retryable: false,
+        });
+        setLoading(false);
+        return;
+      }
+
       const records = await pb.collection('server').getFullList();
 
       if (records.length === 0) {
-        throw new Error('No server data available');
+        console.log('No server data available, creating default record');
+        try {
+          if (!isUserAuthenticated()) {
+            throw new Error('Authentication required to create server data.');
+          }
+
+          const defaultData = {
+            player_count: 0,
+            tps: 20.0,
+            mspt: 50.0,
+            player_limit: 20
+          };
+
+          const newRecord = await pb.collection('server').create(defaultData);
+          setServerData(newRecord as ServerData);
+          setPlayerLimit(newRecord.player_limit);
+          setError(null);
+        } catch (createErr) {
+          throw new Error('Failed to create default server data. Please check permissions or sign in.');
+        }
+      } else {
+        const latestRecord = records.pop() as ServerData;
+        setServerData(latestRecord);
+        setPlayerLimit(latestRecord.player_limit);
+        setError(null);
       }
 
-      const latestRecord = records.pop() as ServerData;
-      setServerData(latestRecord);
-      setPlayerLimit(latestRecord.player_limit);
-      setError(null);
-      setRetryCount(0); // Reset retry count on success
+      setRetryCount(0);
     } catch (err) {
       const appError = handleError(err, 'load server data');
       setError(appError);
 
-      // Auto-retry logic for retryable errors
       if (appError.retryable && retryCount < 3) {
         console.log(`Retrying fetch (${retryCount + 1}/3)...`);
         setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchServerData(true), 2000 * (retryCount + 1)); // Exponential backoff
+        setTimeout(() => fetchServerData(true), 2000 * (retryCount + 1));
       }
     } finally {
       if (!isRetry) {
         setLoading(false);
       }
     }
-  }, [handleError, retryCount]);
+  }, [handleError, retryCount, checkServerAvailability]);
 
-  // Validate player limit input
   const validatePlayerLimit = (value: number | ''): boolean => {
     if (value === '') return false;
-    return value >= 0 && value <= 1000; // Assuming reasonable max limit
+    return value >= 0 && value <= 1000;
   };
 
-  // Function to update player limit with validation
   const updatePlayerLimit = async () => {
     if (!serverData || playerLimit === '') {
       return;
     }
 
-    // Validate input
+    if (!isUserAuthenticated()) {
+      setError({
+        message: 'You must be signed in to update server settings.',
+        type: 'auth',
+        retryable: false
+      });
+      return;
+    }
+
     if (!validatePlayerLimit(playerLimit)) {
       setError({
         message: 'Invalid player limit. Please enter a number between 0 and 1000.',
@@ -160,11 +225,16 @@ export function HomePage() {
       setUpdating(true);
       setError(null);
 
+      const isAvailable = await checkServerAvailability();
+      if (!isAvailable) {
+        setUpdating(false);
+        return;
+      }
+
       await pb.collection('server').update(serverData.id, {
         player_limit: playerLimit
       });
 
-      // Show success indicator briefly
       setUpdateSuccess(true);
       setTimeout(() => setUpdateSuccess(false), 2000);
     } catch (err) {
@@ -176,40 +246,50 @@ export function HomePage() {
   };
 
   useEffect(() => {
-    // Initial data fetch
-    fetchServerData();
+    checkServerAvailability().then(isAvailable => {
+      if (isAvailable) {
+        fetchServerData();
+      } else {
+        setLoading(false);
+      }
+    });
 
-    // Set up real-time subscription with error handling
-    try {
+    let subscription: any = null;
+
+    if (isUserAuthenticated()) {
       try {
-        const subscription = pb.collection('server').subscribe('*', function (e) {
+        subscription = pb.collection('server').subscribe('*', function (e) {
           console.log('Received real-time update:', e);
           if (e.action === 'create' || e.action === 'update') {
             setServerData(e.record as ServerData);
             setPlayerLimit(e.record.player_limit);
           }
-        },
-        );
+        });
       } catch (err) {
         console.error('Subscription error:', err);
         setError(handleError(err, 'establish real-time connection'));
       }
-      // Optional: Set up a timer as fallback for real-time updates
-      const refreshInterval = setInterval(() => fetchServerData(), 60000);
+    }
 
-      return () => {
-        // Clean up subscription and interval on component unmount
+    const refreshInterval = setInterval(() => {
+      if (serverAvailable) {
+        fetchServerData();
+      } else {
+        checkServerAvailability();
+      }
+    }, 60000);
+
+    return () => {
+      if (subscription) {
         try {
           pb.collection('server').unsubscribe();
         } catch (err) {
           console.error('Error unsubscribing:', err);
         }
-        clearInterval(refreshInterval);
-      };
-    } catch (err) {
-      setError(handleError(err, 'set up real-time updates'));
-    }
-  }, [fetchServerData, handleError]);
+      }
+      clearInterval(refreshInterval);
+    };
+  }, [fetchServerData, handleError, checkServerAvailability, serverAvailable]);
 
   const handleRefresh = () => {
     setRetryCount(0);
@@ -259,12 +339,54 @@ export function HomePage() {
     );
   };
 
+  const renderServerStatus = () => {
+    if (serverAvailable === false) {
+      return (
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          title="Server Unavailable"
+          color="red"
+          mb="xl"
+        >
+          <Text>The Pocketbase server is currently unavailable. Make sure it's running and accessible.</Text>
+          <Button
+            size="xs"
+            variant="light"
+            mt="sm"
+            onClick={() => checkServerAvailability().then(isAvailable => {
+              if (isAvailable) fetchServerData();
+            })}
+            loading={loading}
+          >
+            Check Connection
+          </Button>
+        </Alert>
+      );
+    }
+
+    if (!isUserAuthenticated()) {
+      return (
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          title="Authentication Required"
+          color="yellow"
+          mb="xl"
+        >
+          <Text>You need to sign in to fully access server controls and data.</Text>
+        </Alert>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'row' }}>
       <NavbarSimple page="Home" />
       <div style={{ margin: 'var(--mantine-spacing-xl)', position: 'relative', width: '100%' }}>
         <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
 
+        {renderServerStatus()}
         {renderErrorAlert()}
 
         <Group justify="flex-end" mb="md">
@@ -313,12 +435,11 @@ export function HomePage() {
               <Group gap={8}>
                 <NumberInput
                   style={{ flex: 1 }}
-                  disabled={loading || updating}
+                  disabled={loading || updating || !isUserAuthenticated() || !serverAvailable}
                   value={playerLimit}
                   onChange={(value) => {
                     if (typeof value === 'number' || value === '') {
                       setPlayerLimit(value);
-                      // Clear validation errors when input changes
                       if (error?.type === 'validation') {
                         setError(null);
                       }
@@ -330,9 +451,11 @@ export function HomePage() {
                 />
                 <Tooltip
                   label={
-                    updating ? "Updating..." :
-                      updateSuccess ? "Updated successfully!" :
-                        "Set player limit"
+                    !isUserAuthenticated() ? "Sign in to edit" :
+                      !serverAvailable ? "Server unavailable" :
+                        updating ? "Updating..." :
+                          updateSuccess ? "Updated successfully!" :
+                            "Set player limit"
                   }
                 >
                   <ActionIcon
@@ -340,7 +463,8 @@ export function HomePage() {
                     variant="filled"
                     onClick={updatePlayerLimit}
                     loading={updating}
-                    disabled={loading || playerLimit === serverData?.player_limit || !validatePlayerLimit(playerLimit)}
+                    disabled={loading || !isUserAuthenticated() || !serverAvailable ||
+                      playerLimit === serverData?.player_limit || !validatePlayerLimit(playerLimit)}
                   >
                     {updateSuccess ? <IconCheck size={18} /> : "Set"}
                   </ActionIcon>
