@@ -359,13 +359,6 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             defaultChecked={editingInfraction?.expired}
           />
           <Space h="md" />
-          <Checkbox
-            name='send_warning'
-            label="Send a warn message"
-            description='Whether to notify the user they have been warned.'
-            defaultChecked={editingInfraction?.sendWarning}
-          />
-          <Space h="md" />
           <Button type="submit">Update</Button>
         </form>
       </Modal>
