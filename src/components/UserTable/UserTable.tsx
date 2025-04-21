@@ -8,7 +8,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface UserTableProps {
   opened: boolean;
-  setOpened: (value: boolean) => void;
+  setOpened: (value: boolean, userId?: string) => void;
   setSelectedUserId: (id: string) => void;
 }
 
