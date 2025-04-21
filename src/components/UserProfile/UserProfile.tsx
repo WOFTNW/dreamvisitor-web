@@ -23,7 +23,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [userData, setUserData] = useState<User | null>(null);
   const [infractions, setInfractions] = useState<Infraction[]>([]);
   const [inventory, setInventory] = useState<UserInventoryItem[]>([]);
-  const [modalLoading, { toggle: toggleModalLoading }] = useDisclosure(false);
+  const [modalLoading, setModalLoading] = useState(false); // Changed from useDisclosure to direct state
   const previousUserIdRef = useRef<string | null | undefined>(null);
   const isCurrentlyFetchingRef = useRef(false);
 
@@ -102,7 +102,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     if (!userData || !userId) return;
 
     try {
-      toggleModalLoading();
+      setModalLoading(true); // Use direct setState instead of toggle
 
       await pb.collection('infractions').create({
         reason: infractionData.reason,
@@ -117,7 +117,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         expand: 'infractions,inventory_items.item',
         $cancelKey: `user-profile-${userId}`,
       });
-
+      
       setUserData(user as unknown as User);
 
       // Extract expanded relations
@@ -126,11 +126,12 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
       } else {
         setInfractions([]);
       }
+
+      setModalLoading(false); // Set loading to false before closing modal
       close();
     } catch (err) {
       console.error('Failed to create infraction:', err);
-    } finally {
-      toggleModalLoading();
+      setModalLoading(false); // Ensure loading is set to false on error
     }
   };
 
@@ -143,7 +144,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     if (!editingInfraction || !userData || !userId) return;
 
     try {
-      toggleModalLoading();
+      setModalLoading(true); // Use direct setState instead of toggle
 
       await pb.collection('infractions').update(editingInfraction.id, {
         reason: infractionData.reason,
@@ -166,11 +167,12 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
       } else {
         setInfractions([]);
       }
+
+      setModalLoading(false); // Set loading to false before closing modal
       closeEditModal();
     } catch (err) {
       console.error('Failed to update infraction:', err);
-    } finally {
-      toggleModalLoading();
+      setModalLoading(false); // Ensure loading is set to false on error
     }
   };
 
