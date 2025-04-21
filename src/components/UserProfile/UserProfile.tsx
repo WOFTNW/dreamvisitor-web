@@ -117,7 +117,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         expand: 'infractions,inventory_items.item',
         $cancelKey: `user-profile-${userId}`,
       });
-      
+
       setUserData(user as unknown as User);
 
       // Extract expanded relations
@@ -139,7 +139,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     value: number,
     reason: string,
     expired: boolean,
-    sendWarnning?: boolean
+    sendWarning?: boolean
   }) => {
     if (!editingInfraction || !userData || !userId) return;
 
@@ -150,7 +150,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         reason: infractionData.reason,
         value: infractionData.value,
         expired: infractionData.expired,
-        send_warning: infractionData.sendWarnning,
+        send_warning: infractionData.sendWarning,
       });
 
       // Refetch user data to update the UI
@@ -291,7 +291,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
           const reason = formData.get('reason') as string;
           const expired = Boolean(formData.get("expired"));
           const sendWarnning = Boolean(formData.get("send_warning"));
-          handleEditInfraction({ value, reason, expired, sendWarnning });
+          handleEditInfraction({ value, reason, expired, sendWarning: sendWarnning });
         }}>
           <NumberInput
             data-autofocus
