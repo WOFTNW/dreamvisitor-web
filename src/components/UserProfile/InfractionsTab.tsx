@@ -5,14 +5,15 @@ import { Button, Paper, Space } from '@mantine/core';
 interface InfractionsTabProps {
   infractions: Infraction[];
   onNewInfraction: () => void;
+  onEditInfraction?: (infraction: Infraction) => void;
 }
 
-export function InfractionsTab({ infractions, onNewInfraction }: InfractionsTabProps) {
+export function InfractionsTab({ infractions, onNewInfraction, onEditInfraction }: InfractionsTabProps) {
   return (
     <>
       <Space h="md" />
       <Paper p="md" withBorder>
-        <InfractionList infractions={infractions} />
+        <InfractionList infractions={infractions} onEdit={onEditInfraction} />
       </Paper>
       <Space h="md" />
       <Button onClick={onNewInfraction}>New Infraction</Button>

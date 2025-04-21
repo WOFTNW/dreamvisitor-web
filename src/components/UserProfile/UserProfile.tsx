@@ -16,6 +16,8 @@ interface UserProfileProps {
 
 export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [modalOpened, { open, close }] = useDisclosure(false);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
+  const [editingInfraction, setEditingInfraction] = useState<Infraction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
@@ -132,6 +134,46 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
     }
   };
 
+  const handleEditInfraction = async (infractionData: {
+    value: number,
+    reason: string,
+    expired: boolean,
+    sendWarnning?: boolean
+  }) => {
+    if (!editingInfraction || !userData || !userId) return;
+
+    try {
+      toggleModalLoading();
+
+      await pb.collection('infractions').update(editingInfraction.id, {
+        reason: infractionData.reason,
+        value: infractionData.value,
+        expired: infractionData.expired,
+        send_warning: infractionData.sendWarnning,
+      });
+
+      // Refetch user data to update the UI
+      const user = await pb.collection('users').getOne(userId, {
+        expand: 'infractions,inventory_items.item',
+        $cancelKey: `user-profile-${userId}`,
+      });
+
+      setUserData(user as unknown as User);
+
+      // Extract expanded relations
+      if (user.expand?.infractions) {
+        setInfractions(user.expand.infractions as unknown as Infraction[]);
+      } else {
+        setInfractions([]);
+      }
+      closeEditModal();
+    } catch (err) {
+      console.error('Failed to update infraction:', err);
+    } finally {
+      toggleModalLoading();
+    }
+  };
+
   // Show a message when no user is selected
   if (opened && !userId) {
     return (
@@ -236,6 +278,54 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         </form>
       </Modal>
 
+      {/* Edit Infraction Modal */}
+      <Modal opened={editModalOpened} onClose={closeEditModal} title="Edit Infraction">
+        <LoadingOverlay visible={modalLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const formData = new FormData(form);
+          const value = Number(formData.get('value'));
+          const reason = formData.get('reason') as string;
+          const expired = Boolean(formData.get("expired"));
+          const sendWarnning = Boolean(formData.get("send_warning"));
+          handleEditInfraction({ value, reason, expired, sendWarnning });
+        }}>
+          <NumberInput
+            data-autofocus
+            withAsterisk
+            label='Value'
+            name="value"
+            description='How many points this infraction is worth.'
+            defaultValue={editingInfraction?.value}
+            min={1}
+          />
+          <Space h="md" />
+          <Textarea
+            label="Reason"
+            name="reason"
+            description="(Optional) Add a reason for this infraction."
+            defaultValue={editingInfraction?.reason}
+          />
+          <Space h="md" />
+          <Checkbox
+            name='expired'
+            label="Mark as expired"
+            description='Whether this infraction is expired.'
+            defaultChecked={editingInfraction?.expired}
+          />
+          <Space h="md" />
+          <Checkbox
+            name='send_warning'
+            label="Send a warn message"
+            description='Whether to notify the user they have been warned.'
+            defaultChecked={editingInfraction?.sendWarning}
+          />
+          <Space h="md" />
+          <Button type="submit">Update</Button>
+        </form>
+      </Modal>
+
       <Transition
         mounted={opened}
         transition="fade-up"
@@ -252,7 +342,6 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             {userData && (
               <>
                 <Group gap="var(--mantine.spacing.md)">
-                  {/* TODO: Fetch This From Pocketbase */}
                   <Avatar size="xl" src={pb.files.getURL(userData, userData.discord_img)} alt="Avatar" />
                   <Stack gap={0}>
                     <Group gap="var(--mantine-spacing-sm)">
@@ -301,6 +390,10 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                     <InfractionsTab
                       infractions={infractions}
                       onNewInfraction={open}
+                      onEditInfraction={(infraction) => {
+                        setEditingInfraction(infraction);
+                        openEditModal();
+                      }}
                     />
                   </Tabs.Panel>
 

@@ -1,11 +1,13 @@
-import { Accordion, Badge, Group, Space, Text } from '@mantine/core';
+import { Accordion, Badge, Group, Space, Text, ActionIcon } from '@mantine/core';
+import { IconEdit } from '@tabler/icons-react';
 import { Infraction } from '@/types/models';
 
 interface InfractionListProps {
   infractions: Infraction[];
+  onEdit?: (infraction: Infraction) => void;
 }
 
-export function InfractionList({ infractions }: InfractionListProps) {
+export function InfractionList({ infractions, onEdit }: InfractionListProps) {
   function getBadge(expired: boolean) {
     return expired ?
       <Badge variant='light' color="gray">Expired</Badge> :
@@ -25,7 +27,19 @@ export function InfractionList({ infractions }: InfractionListProps) {
           </Group>
           <Group>
             {getBadge(item.expired)}
-          <Space w='s'></Space>
+            {onEdit && (
+              <ActionIcon
+                variant="subtle"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent accordion from toggling
+                  onEdit(item);
+                }}
+                aria-label="Edit infraction"
+              >
+                <IconEdit size={16} />
+              </ActionIcon>
+            )}
+            <Space w='s'></Space>
           </Group>
         </Group>
       </Accordion.Control>
