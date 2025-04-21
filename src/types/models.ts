@@ -7,6 +7,10 @@ export interface User {
   mc_username: string;
   infractions: string[];
   inventory_items: string[];
+  users_home: string[];
+  claims: string[];
+  claim_limit: number;
+  play_time: number;
   balance: number;
   daily_streak: number;
   last_work: string;
@@ -18,6 +22,8 @@ export interface User {
   expand?: {
     infractions?: Infraction[];
     inventory_items?: UserInventoryItem[];
+    users_home?: UserHome[];
+    claims?: Location[];
   };
 }
 
@@ -69,4 +75,32 @@ export interface Infraction {
   user: string;
   created: string;
   updated: string;
+}
+
+export interface Location {
+  collectionId: string;
+  collectionName: string;
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+  pitch: number;
+  yaw: number;
+  world: string;
+  created: string;
+  updated: string;
+}
+
+export interface UserHome {
+  collectionId: string;
+  collectionName: string;
+  id: string;
+  name: string;
+  location: string;
+  user: string;
+  created: string;
+  updated: string;
+  expand?: {
+    location?: Location;
+  };
 }
