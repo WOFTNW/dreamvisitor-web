@@ -1,9 +1,9 @@
 import { InfractionList } from '@/components/InfractionList/InfractionList';
 import { pb } from '@/lib/pocketbase';
-import { User, Infraction, UserInventoryItem } from '@/types/models';
+import { User, Infraction, UserInventoryItem, UserHome, Location } from '@/types/models';
 import { Avatar, Badge, Button, Checkbox, FileInput, Group, LoadingOverlay, Modal, NumberInput, Paper, Skeleton, Space, Stack, Tabs, Text, Textarea, Title, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconCoin, IconMoneybag, IconUser } from '@tabler/icons-react';
+import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconCoin, IconMoneybag, IconUser, IconHome, IconMap } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
 import { EconomyTab } from './EconomyTab';
 import { InfractionsTab } from './InfractionsTab';
@@ -14,6 +14,25 @@ interface UserProfileProps {
   userId?: string | null; // Make userId truly optional
 }
 
+// Helper function to format time
+const formatPlayTime = (minutes: number): string => {
+  if (minutes < 60) {
+    return `${minutes} minutes`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours < 24) {
+    return `${hours}h ${remainingMinutes}m`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+
+  return `${days}d ${remainingHours}h ${remainingMinutes}m`;
+};
+
 export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [modalOpened, { open, close }] = useDisclosure(false);
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
@@ -23,6 +42,8 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [userData, setUserData] = useState<User | null>(null);
   const [infractions, setInfractions] = useState<Infraction[]>([]);
   const [inventory, setInventory] = useState<UserInventoryItem[]>([]);
+  const [homes, setHomes] = useState<UserHome[]>([]);
+  const [claims, setClaims] = useState<Location[]>([]);
   const [modalLoading, setModalLoading] = useState(false); // Changed from useDisclosure to direct state
   const previousUserIdRef = useRef<string | null | undefined>(null);
   const isCurrentlyFetchingRef = useRef(false);
@@ -44,6 +65,8 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         setUserData(null);
         setInfractions([]);
         setInventory([]);
+        setHomes([]);
+        setClaims([]);
         setError(null);
       }
       return;
@@ -62,7 +85,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
         // Modify the expand parameter to include a higher limit for infractions if needed
         const user = await pb.collection('users').getOne(userId, {
-          expand: 'infractions,inventory_items.item',
+          expand: 'infractions,inventory_items.item,users_home.location,claims',
           $cancelKey: `user-profile-${userId}`,
         });
 
@@ -79,6 +102,18 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
           setInventory(user.expand.inventory_items as unknown as UserInventoryItem[]);
         } else {
           setInventory([]);
+        }
+
+        if (user.expand?.users_home) {
+          setHomes(user.expand.users_home as unknown as UserHome[]);
+        } else {
+          setHomes([]);
+        }
+
+        if (user.expand?.claims) {
+          setClaims(user.expand.claims as unknown as Location[]);
+        } else {
+          setClaims([]);
         }
       } catch (err) {
         // Don't show errors for cancelled requests
@@ -97,7 +132,14 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
     fetchUserData();
   }, [opened, userId]);
-
+  function calClaims(claims: Location[]) {
+    let sum = 0
+    claims.map(claim => {
+      // to avoid multiplaction with zero
+      sum += Math.max(1, Math.abs(claim.x)) * Math.max(1, Math.abs(claim.z))
+    })
+    return sum
+  }
   const handleCreateInfraction = async (infractionData: { value: number, reason: string, sendWarnning?: boolean }) => {
     if (!userData || !userId) return;
 
@@ -114,7 +156,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
       // Modify the expand parameter to include a higher limit for infractions if needed
       const user = await pb.collection('users').getOne(userId, {
-        expand: 'infractions,inventory_items.item',
+        expand: 'infractions,inventory_items.item,users_home.location,claims',
         $cancelKey: `user-profile-${userId}`,
       });
 
@@ -155,7 +197,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
       // Refetch user data to update the UI
       const user = await pb.collection('users').getOne(userId, {
-        expand: 'infractions,inventory_items.item',
+        expand: 'infractions,inventory_items.item,users_home.location,claims',
         $cancelKey: `user-profile-${userId}`,
       });
 
@@ -374,6 +416,9 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                     <Tabs.Tab value="economy" leftSection={<IconMoneybag />}>
                       Economy
                     </Tabs.Tab>
+                    <Tabs.Tab value="locations" leftSection={<IconMap />}>
+                      Locations
+                    </Tabs.Tab>
                   </Tabs.List>
 
                   <Tabs.Panel value="stats">
@@ -385,6 +430,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                       <Text><strong>Account Created:</strong> {new Date(userData.created).toLocaleString()}</Text>
                       <Text><strong>Last Updated:</strong> {new Date(userData.updated).toLocaleString()}</Text>
                       <Text><strong>Account Status:</strong> {userData.is_banned ? "Banned" : userData.is_suspended ? "Suspended" : "Active"}</Text>
+                      <Text><strong>Play Time:</strong> {formatPlayTime(userData.play_time || 0)}</Text>
                     </Paper>
                   </Tabs.Panel>
 
@@ -404,6 +450,58 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                       userData={userData}
                       inventory={inventory}
                     />
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="locations">
+                    <Space h="md" />
+                    <Paper p="md" withBorder mb="md">
+                      <Title order={4} mb="md">Home Locations</Title>
+                      {homes.length > 0 ? (
+                        homes.map(home => {
+                          const location = home.expand?.location;
+                          return (
+                            <Paper key={home.id} p="sm" withBorder mb="sm">
+                              <Group>
+                                <Group>
+                                  <IconHome size={18} />
+                                  <Text fw={700}>{home.name}</Text>
+                                </Group>
+                                <Text size="sm">Created: {new Date(home.created).toLocaleString()}</Text>
+                              </Group>
+                              {location && (
+                                <Text size="sm" mt="xs">
+                                  Location: {location.world} ({Math.round(location.x)}, {Math.round(location.y)}, {Math.round(location.z)})
+                                </Text>
+                              )}
+                            </Paper>
+                          );
+                        })
+                      ) : (
+                        <Text>No home locations set</Text>
+                      )}
+                    </Paper>
+
+                    <Paper p="md" withBorder>
+                      <Group>
+                        <Title order={4} mb="md">Land Claims</Title>
+                        <Badge size="lg">{calClaims(claims)} / {userData.claim_limit || 0}</Badge>
+                      </Group>
+
+                      {claims.length > 0 ? (
+                        claims.map(claim => (
+                          <Paper key={claim.id} p="sm" withBorder mb="sm">
+                            <Group>
+                              <IconMap size={18} />
+                              <Text>
+                                {claim.world} ({Math.round(claim.x)}, {Math.round(claim.y)}, {Math.round(claim.z)})
+                              </Text>
+                            </Group>
+                          </Paper>
+                        ))
+                      ) : (
+                        <Text>No land claims</Text>
+                      )}
+                    </Paper>
                   </Tabs.Panel>
                 </Tabs>
               </>
