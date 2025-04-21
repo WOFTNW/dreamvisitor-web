@@ -91,6 +91,18 @@ export interface Location {
   updated: string;
 }
 
+export interface UserClaim {
+  collectionId: string;
+  collectionName: string;
+  id: string;
+  expand?: {
+    location?: Location;
+  };
+  size: number;
+  created: string;
+  updated: string;
+}
+
 export interface UserHome {
   collectionId: string;
   collectionName: string;
