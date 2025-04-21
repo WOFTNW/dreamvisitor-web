@@ -15,13 +15,13 @@ interface UserProfileProps {
 }
 
 // Helper function to format time
-const formatPlayTime = (minutes: number): string => {
-  if (minutes < 60) {
-    return `${minutes} minutes`;
+const formatPlayTime = (milliseconds: number): string => {
+  if (milliseconds < 1000) {
+    return `${milliseconds} milliseconds`;
   }
 
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  const hours = Math.floor(milliseconds / 1000 / 60 / 60);
+  const remainingMinutes = milliseconds % 1000 % 60 % 60;
 
   if (hours < 24) {
     return `${hours}h ${remainingMinutes}m`;
