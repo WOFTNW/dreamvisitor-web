@@ -1,6 +1,6 @@
 import { InfractionList } from '@/components/InfractionList/InfractionList';
 import { pb } from '@/lib/pocketbase';
-import { User, Infraction, UserInventoryItem, UserHome, Location } from '@/types/models';
+import { User, Infraction, UserInventoryItem, UserHome, Location, UserClaim } from '@/types/models';
 import { Avatar, Badge, Button, Checkbox, FileInput, Group, LoadingOverlay, Modal, NumberInput, Paper, Skeleton, Space, Stack, Tabs, Text, Textarea, Title, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAnalyze, IconArrowBack, IconBrandDiscord, IconBrandMinecraft, IconClipboard, IconCoin, IconMoneybag, IconUser, IconHome, IconMap } from '@tabler/icons-react';
@@ -43,7 +43,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
   const [infractions, setInfractions] = useState<Infraction[]>([]);
   const [inventory, setInventory] = useState<UserInventoryItem[]>([]);
   const [homes, setHomes] = useState<UserHome[]>([]);
-  const [claims, setClaims] = useState<Location[]>([]);
+  const [claims, setClaims] = useState<UserClaim[]>([]);
   const [modalLoading, setModalLoading] = useState(false); // Changed from useDisclosure to direct state
   const previousUserIdRef = useRef<string | null | undefined>(null);
   const isCurrentlyFetchingRef = useRef(false);
@@ -85,7 +85,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
         // Modify the expand parameter to include a higher limit for infractions if needed
         const user = await pb.collection('users').getOne(userId, {
-          expand: 'infractions,inventory_items.item,users_home.location,claims',
+          expand: 'infractions,inventory_items.item,users_home.location,claims.location',
           $cancelKey: `user-profile-${userId}`,
         });
 
@@ -111,7 +111,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
         }
 
         if (user.expand?.claims) {
-          setClaims(user.expand.claims as unknown as Location[]);
+          setClaims(user.expand.claims as unknown as UserClaim[]);
         } else {
           setClaims([]);
         }
@@ -132,11 +132,11 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
     fetchUserData();
   }, [opened, userId]);
-  function calClaims(claims: Location[]) {
+  function calClaims(claims: UserClaim[]) {
     let sum = 0
     claims.map(claim => {
       // to avoid multiplaction with zero
-      sum += Math.max(1, Math.abs(claim.x)) * Math.max(1, Math.abs(claim.z))
+      sum += claim.size;
     })
     return sum
   }
@@ -156,7 +156,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
       // Modify the expand parameter to include a higher limit for infractions if needed
       const user = await pb.collection('users').getOne(userId, {
-        expand: 'infractions,inventory_items.item,users_home.location,claims',
+        expand: 'infractions,inventory_items.item,users_home.location,claims.location',
         $cancelKey: `user-profile-${userId}`,
       });
 
@@ -197,7 +197,7 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
 
       // Refetch user data to update the UI
       const user = await pb.collection('users').getOne(userId, {
-        expand: 'infractions,inventory_items.item,users_home.location,claims',
+        expand: 'infractions,inventory_items.item,users_home.location,claims.location',
         $cancelKey: `user-profile-${userId}`,
       });
 
@@ -481,16 +481,20 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
                       </Group>
 
                       {claims.length > 0 ? (
-                        claims.map(claim => (
-                          <Paper key={claim.id} p="sm" withBorder mb="sm">
-                            <Group>
-                              <IconMap size={18} />
-                              <Text>
-                                {claim.world} ({Math.round(claim.x)}, {Math.round(claim.y)}, {Math.round(claim.z)})
-                              </Text>
-                            </Group>
-                          </Paper>
-                        ))
+                        claims.map(claim => {
+                          const location = claim.expand?.location;
+                          return (
+                            <Paper key={claim.id} p="sm" withBorder mb="sm">
+                              <Group>
+                                <IconMap size={18} />
+                                {location && (
+                                  <Text>
+                                    {location.world} ({Math.round(location.x)}, {Math.round(location.y)}, {Math.round(location.z)}): {claim.size} blocks
+                                  </Text>
+                                )}
+                              </Group>
+                            </Paper>)
+                        })
                       ) : (
                         <Text>No land claims</Text>
                       )}
