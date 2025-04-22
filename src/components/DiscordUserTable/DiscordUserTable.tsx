@@ -23,8 +23,8 @@ export function DiscordUserTable({ setOpened, users, onUserSelect }: DiscordUser
     >
       <Table.Td>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Avatar src={pb.files.getURL(user, user.discord_img)} size="md" radius="xl" />
-          <Text>{user.discord_id}</Text>
+          <Avatar src={user.discord_img} size="md" radius="xl" />
+          <Text>{user.discord_username}</Text>
         </div>
       </Table.Td>
       <Table.Td>{user.mc_username}</Table.Td>

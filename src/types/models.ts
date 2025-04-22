@@ -3,6 +3,7 @@ export interface User {
   collectionName: string;
   id: string;
   discord_id: string;
+  discord_username: string;
   discord_img: string;
   mc_username: string;
   infractions: string[];

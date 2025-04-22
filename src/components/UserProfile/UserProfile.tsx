@@ -379,10 +379,10 @@ export function UserProfile({ opened, setOpened, userId }: UserProfileProps) {
             {userData && (
               <>
                 <Group gap="var(--mantine.spacing.md)">
-                  <Avatar size="xl" src={pb.files.getURL(userData, userData.discord_img)} alt="Avatar" />
+                  <Avatar size="xl" src={userData.discord_img} alt="Avatar" />
                   <Stack gap={0}>
                     <Group gap="var(--mantine-spacing-sm)">
-                      <Title order={2}>{userData.discord_id}</Title>
+                      <Title order={2}>{userData.discord_username}</Title>
                       <Badge color={userData.is_banned ? "red" : userData.is_suspended ? "orange" : "green"}>
                         {userData.is_banned ? "Banned" : userData.is_suspended ? "Suspended" : "Active"}
                       </Badge>
